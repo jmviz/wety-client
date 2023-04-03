@@ -7,9 +7,9 @@ let timeoutId;
 
 const api = window.location.hostname === 'localhost' ? 'http://localhost:3000/' : 'https://api.wety.org/';
 
-function displayMatches(matches) {
-    suggestionsList.innerHTML = '';
+function displaySuggestions(matches) {
     suggestions = matches;
+    suggestionsList.innerHTML = '';
     selectedSuggestionIndex = -1;
     if (suggestions.length === 0) {
         suggestionsList.style.display = 'none';
@@ -41,8 +41,7 @@ async function fetchSuggestions() {
         const response = await fetch(`${api}langs/${input}`);
         const data = await response.json();
         console.log(data);
-        const matches = data.matches;
-        displayMatches(matches);
+        displaySuggestions(data.matches);
     } catch (error) {
         console.error(error);
     }
@@ -58,13 +57,11 @@ searchInput.addEventListener('keydown', event => {
         event.preventDefault();
         if (selectedSuggestionIndex < suggestions.length - 1) {
             selectedSuggestionIndex++;
-            updateSelectedSuggestion();
         }
     } else if (event.key === 'ArrowUp') {
         event.preventDefault();
         if (selectedSuggestionIndex > -1) {
             selectedSuggestionIndex--;
-            updateSelectedSuggestion();
         }
     } else if (event.key === 'Tab' || event.key === 'Enter') {
         if (selectedSuggestionIndex > -1) {
@@ -74,6 +71,8 @@ searchInput.addEventListener('keydown', event => {
             selectedSuggestionIndex = -1;
         }
     }
+
+    updateSelectedSuggestion();
 });
 
 function updateSelectedSuggestion() {
