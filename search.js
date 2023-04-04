@@ -15,7 +15,6 @@ function displaySuggestions(matches) {
         suggestionsList.style.display = 'none';
         return;
     }
-    suggestionsList.style.display = 'block';
     suggestions.forEach((suggestion, index) => {
         const li = document.createElement('li');
         li.classList.add('suggestion-item');
@@ -73,6 +72,14 @@ searchInput.addEventListener('keydown', event => {
     }
 
     updateSelectedSuggestion();
+});
+
+searchInput.addEventListener('blur', event => {
+    suggestionsList.style.display = 'none';
+});
+
+searchInput.addEventListener('focus', event => {
+    suggestionsList.style.display = 'block';
 });
 
 function updateSelectedSuggestion() {
