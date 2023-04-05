@@ -136,6 +136,9 @@ function createTermSuggestionListItem(termSuggestion) {
         termSearchInput.value = termSuggestion.term;
         termSelectedId = termSuggestion.id;
         termSuggestionsList.classList.add('hidden');
+        if (langSelectedId !== -1) {
+            createTree()
+        }
     });
     const termLine = document.createElement('div');
     termLine.classList.add('term-line');
@@ -209,6 +212,9 @@ termSearchInput.addEventListener('keydown', event => {
             termSearchInput.value = suggestion.item.term;
             termSelectedId = suggestion.id;
             termSuggestionsList.classList.add('hidden');
+            if (langSelectedId !== -1) {
+                createTree()
+            }
             termSelectedSuggestionIndex = -1;
         }
     }

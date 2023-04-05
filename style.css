@@ -4,7 +4,6 @@
   justify-content: center;
   align-items: center;
   padding: 20px;
-  /* background-color: #f1f1f1; */
 }
 
 .suggestions:not(.hidden) {
@@ -97,6 +96,9 @@
 .pos-line {
   margin-left: 10px;
   font-size: smaller;
+  white-space: nowrap;
+  /* overflow: hidden;
+  text-overflow: ellipsis; */
 }
 
 .pos {
