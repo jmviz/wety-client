@@ -1,5 +1,5 @@
 import { ExpandedItem } from "./types";
-import {api, langSelectedId, termSelectedId} from "./search";
+import { api, langSelectedId, termSelectedId } from "./search";
 
 import { create } from "d3-selection";
 import { link, curveStepBefore } from "d3-shape";
@@ -161,12 +161,26 @@ function HeadProgenitorTreeSVG(data: ExpandedItem, {
 function showTooltip(event: MouseEvent, selection: HierarchyPointNode<ExpandedItem>) {
     const item = selection.data.item;
     tooltip.innerHTML = item.lang;
+
+    const tooltipRect = tooltip.getBoundingClientRect();
+    const cursorX = event.clientX;
+    const cursorY = event.clientY;
+
+    let tooltipX = cursorX + 10;
+    if (tooltipX + tooltipRect.width > window.innerWidth + window.scrollX) {
+        tooltipX = cursorX - tooltipRect.width - 10;
+    }
+    tooltip.style.left = tooltipX + window.scrollX + "px";
+
+    let tooltipY = cursorY - 15;
+    if (tooltipY + tooltipRect.height > window.innerHeight + window.scrollY) {
+        tooltipY = cursorY - tooltipRect.height + 15;
+    }
+    tooltip.style.top = tooltipY + window.scrollY + "px";
+
     tooltip.style.opacity = "1";
-    tooltip.style.left = (event.clientX + 10) + "px";
-    tooltip.style.top = (event.clientY - 15) + "px";
 }
 
 function hideTooltip() {
     tooltip.style.opacity = "0";
-
 } 

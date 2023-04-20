@@ -23,7 +23,7 @@ function displayLangSuggestions() {
         const li = document.createElement('li');
         li.classList.add('suggestion-item');
         li.textContent = suggestion.lang;
-        li.addEventListener('click', () => {
+        li.addEventListener('pointerup', () => {
             langSearchInput.value = suggestion.lang;
             langSelectedId = suggestion.id;
             langSuggestionsList.classList.add('hidden');
@@ -129,16 +129,18 @@ let termSelectedSuggestionIndex = -1;
 let termSuggestionsListHovered = false;
 export let termSelectedId = -1;
 let termFetchTimeout: number;
+let treeFetchTimeout: number;
 
 function createTermSuggestionListItem(termSuggestion: Item) {
     const listItem = document.createElement('li');
     listItem.classList.add('suggestion-item');
-    listItem.addEventListener('click', () => {
+    listItem.addEventListener('pointerup', () => {
         termSearchInput.value = termSuggestion.term;
         termSelectedId = termSuggestion.id;
         termSuggestionsList.classList.add('hidden');
         if (langSelectedId !== -1) {
-            getHeadProgenitorTree()
+            window.clearTimeout(treeFetchTimeout);
+            treeFetchTimeout = window.setTimeout(getHeadProgenitorTree, 0);
         }
     });
     const termLine = document.createElement('div');
@@ -176,6 +178,11 @@ function displayTermSuggestions() {
 }
 
 async function fetchTermSuggestions() {
+    if (langSelectedId === -1) {
+        // add ui message here
+        termSuggestionsList.innerHTML = '';
+        return;
+    }
     const input = encodeURIComponent(termSearchInput.value.toLowerCase());
     if (!input) {
         termSuggestionsList.innerHTML = '';
@@ -216,7 +223,8 @@ termSearchInput.addEventListener('keydown', event => {
             termSelectedId = suggestion.item.id;
             termSuggestionsList.classList.add('hidden');
             if (langSelectedId !== -1) {
-                getHeadProgenitorTree()
+                window.clearTimeout(treeFetchTimeout);
+                treeFetchTimeout = window.setTimeout(getHeadProgenitorTree, 0);
             }
             termSelectedSuggestionIndex = -1;
         }
