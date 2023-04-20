@@ -13,12 +13,12 @@
     <header>
         <div id="search">
             <div id="lang-search">
-                <input type="text" placeholder="Language..." id="lang-input">
-                <ul class="suggestions" id="lang-suggestions"></ul>
+                <input id="lang-input" type="text" placeholder="Language...">
+                <ul id="lang-suggestions" class="suggestions"></ul>
             </div>
             <div id="term-search">
-                <input type="text" placeholder="Term..." id="term-input">
-                <ul class="suggestions" id="term-suggestions"></ul>
+                <input id="term-input" type="text" placeholder="Term..." dir="auto">
+                <ul id="term-suggestions" class="suggestions"></ul>
             </div>
         </div>
     </header>
@@ -26,9 +26,7 @@
         <div id="ety"></div>
         <div id="tooltip"></div>
     </main>
-    <script src="search.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/d3@7"></script>
-    <script src="tree.js"></script>
+    <script src="dist/bundle.js"></script>
 </body>
 
 </html>

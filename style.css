@@ -105,6 +105,8 @@
 }
 
 #tooltip {
+  opacity: 0;
+  transition: opacity 0.05s ease;
   position: absolute;
   text-align: center;
   padding: .5rem;
@@ -119,4 +121,9 @@
 .tree-node-lang {
   font-size: smaller;
   fill: red;
+}
+
+.tree-node-romanization {
+  font-size: smaller;
+  fill: blue;
 }

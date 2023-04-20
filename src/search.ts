@@ -1,13 +1,15 @@
-const langSearchInput = document.getElementById('lang-input');
-const langSuggestionsList = document.getElementById('lang-suggestions');
-let langSuggestions = [];
+import { LangMatch, LangMatches, Item, ItemMatch, ItemMatches } from "./types";
+import { getHeadProgenitorTree } from "./tree";
+
+const langSearchInput = document.getElementById('lang-input') as HTMLInputElement;
+const langSuggestionsList = document.getElementById('lang-suggestions')!;
+let langSuggestions: LangMatch[] = [];
 let langSelectedSuggestionIndex = -1;
 let langSuggestionsListHovered = false;
-let langSelectedId = -1;
+export let langSelectedId = -1;
+let langFetchTimeout: number;
 
-let langFetchTimeoutId;
-
-const api = window.location.hostname === 'localhost' ? 'http://localhost:3000/' : 'https://api.wety.org/';
+export const api = window.location.hostname === 'localhost' ? 'http://localhost:3000/' : 'https://api.wety.org/';
 
 function displayLangSuggestions() {
     langSuggestionsList.innerHTML = '';
@@ -41,7 +43,7 @@ async function fetchLangSuggestions() {
     }
     try {
         const response = await fetch(`${api}langs/${input}`);
-        const data = await response.json();
+        const data = await response.json() as LangMatches;
         console.log(data);
         langSuggestions = data.matches;
         displayLangSuggestions();
@@ -51,8 +53,8 @@ async function fetchLangSuggestions() {
 }
 
 langSearchInput.addEventListener('input', () => {
-    clearTimeout(langFetchTimeoutId);
-    langFetchTimeoutId = setTimeout(fetchLangSuggestions, 500);
+    window.clearTimeout(langFetchTimeout);
+    langFetchTimeout = window.setTimeout(fetchLangSuggestions, 500);
 });
 
 langSearchInput.addEventListener('keydown', event => {
@@ -117,19 +119,18 @@ function updateSelectedLangSuggestion() {
 }
 
 ///////////////////////////
-//Term stuff
+// Term stuff
 ///////////////////////////
 
-const termSearchInput = document.getElementById('term-input');
-const termSuggestionsList = document.getElementById('term-suggestions');
-let termSuggestions = [];
+const termSearchInput = document.getElementById('term-input') as HTMLInputElement;
+const termSuggestionsList = document.getElementById('term-suggestions')!;
+let termSuggestions: ItemMatch[] = [];
 let termSelectedSuggestionIndex = -1;
 let termSuggestionsListHovered = false;
-let termSelectedId = -1;
+export let termSelectedId = -1;
+let termFetchTimeout: number;
 
-let termFetchTimeoutId;
-
-function createTermSuggestionListItem(termSuggestion) {
+function createTermSuggestionListItem(termSuggestion: Item) {
     const listItem = document.createElement('li');
     listItem.classList.add('suggestion-item');
     listItem.addEventListener('click', () => {
@@ -144,9 +145,11 @@ function createTermSuggestionListItem(termSuggestion) {
     termLine.classList.add('term-line');
     termLine.innerHTML = termSuggestion.term;
     listItem.appendChild(termLine);
-    for (let i = 0; i < termSuggestion.pos.length; i++) {
-        const pos = termSuggestion.pos[i];
-        const gloss = termSuggestion.gloss[i];
+    const posList = termSuggestion.pos ?? [];
+    const glossList = termSuggestion.gloss ?? [];
+    for (let i = 0; i < posList.length; i++) {
+        const pos = posList[i];
+        const gloss = glossList[i];
         const posLine = document.createElement('div');
         posLine.classList.add('pos-line');
         posLine.innerHTML = `<span class="pos">${pos}</span>: <span class="gloss">${gloss}</span>`;
@@ -180,7 +183,7 @@ async function fetchTermSuggestions() {
     }
     try {
         const response = await fetch(`${api}items/${langSelectedId}/${input}`);
-        const data = await response.json();
+        const data = await response.json() as ItemMatches;
         console.log(data);
         termSuggestions = data.matches;
         displayTermSuggestions();
@@ -190,8 +193,8 @@ async function fetchTermSuggestions() {
 }
 
 termSearchInput.addEventListener('input', () => {
-    clearTimeout(termFetchTimeoutId);
-    termFetchTimeoutId = setTimeout(fetchTermSuggestions, 500);
+    window.clearTimeout(termFetchTimeout);
+    termFetchTimeout = window.setTimeout(fetchTermSuggestions, 500);
 });
 
 termSearchInput.addEventListener('keydown', event => {
@@ -210,7 +213,7 @@ termSearchInput.addEventListener('keydown', event => {
             event.preventDefault();
             const suggestion = termSuggestions[termSelectedSuggestionIndex];
             termSearchInput.value = suggestion.item.term;
-            termSelectedId = suggestion.id;
+            termSelectedId = suggestion.item.id;
             termSuggestionsList.classList.add('hidden');
             if (langSelectedId !== -1) {
                 getHeadProgenitorTree()
