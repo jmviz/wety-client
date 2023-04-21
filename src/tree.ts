@@ -68,13 +68,11 @@ function HeadProgenitorTreeSVG(data: ExpandedItem, {
         .sort((a, b) => b.height - a.height || (b.value ?? 0) - (a.value ?? 0));
 
     // Compute the layout.
-    const dx = 10;
+    const dx = 12;
     const dy = width / (root.height + padding);
     let root_layout = layout<ExpandedItem>()
         .nodeSize([dx, dy])
-        .separation(function separation(a, b) {
-            return a.parent == b.parent ? 2.5 : 3;
-        })
+        .separation((a, b) => a.parent == b.parent ? 2.5 : 3)
         (root);
 
     // Center the tree.
@@ -93,7 +91,7 @@ function HeadProgenitorTreeSVG(data: ExpandedItem, {
         .attr("xmlns", "http://www.w3.org/2000/svg")
         .attr("xmlns:xlink", "http://www.w3.org/1999/xlink")
         .attr("xmlns:xhtml", "http://www.w3.org/1999/xhtml")
-        .attr("viewBox", [-dy * padding / 2, x0 - dx, width, height])
+        .attr("viewBox", [-dy * padding / 2, x0 - dx - 5, width, height])
         .attr("width", width)
         .attr("height", height)
         .attr("style", "max-width: 100%; height: auto; height: intrinsic;")
