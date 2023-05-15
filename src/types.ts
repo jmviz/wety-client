@@ -1,10 +1,11 @@
 // API responses:
 
 export interface LangMatch {
-    lang: string;
+    code: string;
     id: number;
-    similarity: number;
     items: number;
+    name: string;
+    similarity: number;
 }
 
 export interface LangMatches {

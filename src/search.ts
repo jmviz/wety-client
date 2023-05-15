@@ -22,9 +22,9 @@ function displayLangSuggestions() {
     langSuggestions.forEach((suggestion, index) => {
         const li = document.createElement('li');
         li.classList.add('suggestion-item');
-        li.textContent = suggestion.lang;
+        li.textContent = suggestion.name;
         li.addEventListener('pointerup', () => {
-            langSearchInput.value = suggestion.lang;
+            langSearchInput.value = suggestion.name;
             langSelectedId = suggestion.id;
             langSuggestionsList.classList.add('hidden');
         });
@@ -72,7 +72,7 @@ langSearchInput.addEventListener('keydown', event => {
         if (langSelectedSuggestionIndex > -1) {
             event.preventDefault();
             const suggestion = langSuggestions[langSelectedSuggestionIndex];
-            langSearchInput.value = suggestion.lang;
+            langSearchInput.value = suggestion.name;
             langSelectedId = suggestion.id;
             langSuggestionsList.classList.add('hidden');
             langSelectedSuggestionIndex = -1;
