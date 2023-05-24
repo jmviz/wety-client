@@ -38,4 +38,5 @@ export interface Item {
 export interface ExpandedItem {
     item: Item;
     children: ExpandedItem[] | null;
+    langDistance: number | null;
 }
