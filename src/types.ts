@@ -23,10 +23,10 @@ export interface ItemMatches {
 
 export interface Item {
     id: number;
-    ety_num: number;
+    etyNum: number;
     lang: string;
     term: string;
-    ety_mode: string | null;
+    etyMode: string | null;
     imputed: boolean;
     reconstructed: boolean;
     url: string | null;

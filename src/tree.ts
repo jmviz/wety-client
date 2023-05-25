@@ -145,7 +145,7 @@ function HeadProgenitorTreeSVG(data: ExpandedItem, {
         .attr("xlink:href", d => d.data.item.url)
         .attr("target", "_blank")
         .attr("transform", d => `translate(${d.y},${d.x})`)
-        .attr("class", "tooltipped");
+        .attr("class", "node");
 
     const text = node.append("text")
         .attr("x", d => d.children ? -6 : 6)
@@ -155,7 +155,7 @@ function HeadProgenitorTreeSVG(data: ExpandedItem, {
         .attr("stroke-width", haloWidth);
 
     text.append("tspan")
-        .attr("class", "tree-node-lang")
+        .attr("class", "lang")
         .attr("x", 0)
         .attr("text-anchor", "middle")
         .attr("dy", "-1.0em")
@@ -163,14 +163,14 @@ function HeadProgenitorTreeSVG(data: ExpandedItem, {
         .text(d => d.data.item.lang);
 
     text.append("tspan")
-        .attr("class", "tree-node-term")
+        .attr("class", "term")
         .attr("x", 0)
         .attr("text-anchor", "middle")
         .attr("dy", "1.0em")
         .text(d => d.data.item.term);
 
     text.append("tspan")
-        .attr("class", "tree-node-romanization")
+        .attr("class", "romanization")
         .attr("x", 0)
         .attr("text-anchor", "middle")
         .attr("dy", "1.0em")
@@ -183,26 +183,118 @@ function HeadProgenitorTreeSVG(data: ExpandedItem, {
     return svg.node();
 }
 
-function showTooltip(event: MouseEvent, selection: HierarchyPointNode<ExpandedItem>) {
+function etyPrep(etyMode: string): string {
+    switch (etyMode) {
+        case 'derived':
+        case 'inherited':
+        case 'borrowed':
+        case 'back-formation':
+            return 'from';
+        case 'compound':
+        case 'univerbation':
+        case 'transfix':
+        case 'surface analysis':
+        case 'suffix':
+        case 'prefix':
+        case 'infix':
+        case 'confix':
+        case 'circumfix':
+        case 'blend':
+        case 'affix':
+            return 'with';
+        case 'root':
+            return 'reflex of';
+        case 'mention':
+            return 'in';
+        default:
+            return 'of';
+    }
+}
+
+function setTooltipHTML(selection: HierarchyPointNode<ExpandedItem>) {
+    tooltip.innerHTML = '';
+
     const item = selection.data.item;
-    tooltip.innerHTML = item.lang;
+    const parent = selection.parent ? {
+        lang: selection.parent.data.item.lang,
+        term: selection.parent.data.item.term,
+        langDistance: selection.parent.data.langDistance,
+    } : null;
 
+    const lang = document.createElement('p');
+    lang.classList.add('lang');
+    lang.style.color = langColor(selection.data.langDistance);
+    lang.textContent = `${item.lang}`;
+    tooltip.appendChild(lang);
+
+    const term = document.createElement('p');
+    term.innerHTML = `<span class="term">${item.term}</span>` + (item.romanization ? ` <span class="romanization">(${item.romanization})</span>` : '');
+    tooltip.appendChild(term);
+
+    if (item.imputed) {
+        const imputed = document.createElement('div');
+        imputed.classList.add('pos-line');
+        imputed.innerHTML = `<span class="imputed">(imputed)</span>`;
+        tooltip.appendChild(imputed);
+    } else if (item.pos && item.gloss && item.pos.length === item.gloss.length) {
+        const posGloss = document.createElement('div');
+        const posList = item.pos ?? [];
+        const glossList = item.gloss ?? [];
+        for (let i = 0; i < posList.length; i++) {
+            const pos = posList[i];
+            const gloss = glossList[i];
+            const posLine = document.createElement('div');
+            posLine.classList.add('pos-line');
+            posLine.innerHTML = `<span class="pos">${pos}</span>: <span class="gloss">${gloss}</span>`;
+            posGloss.appendChild(posLine);
+        }
+        tooltip.appendChild(posGloss);
+    }
+
+    if (item.etyMode && parent) {
+        const ety = document.createElement('p');
+        const prep = etyPrep(item.etyMode);
+        const color = langColor(parent.langDistance);
+        ety.innerHTML = `<span class="ety-mode">${item.etyMode}</span> <span class="ety-prep">${prep}</span> <span class="parent-lang" style="color: ${color};">${parent.lang}</span> <span class="parent-term">${parent.term}</span>`
+        tooltip.appendChild(ety);
+    }
+}
+
+function positionTooltip(event: MouseEvent) {
     const tooltipRect = tooltip.getBoundingClientRect();
-    const cursorX = event.clientX;
-    const cursorY = event.clientY;
+    const cursorX = event.clientX + window.scrollX;
+    const cursorY = event.clientY + window.scrollY;
 
-    let tooltipX = cursorX + 10;
-    if (tooltipX + tooltipRect.width > window.innerWidth + window.scrollX) {
+    const midX = window.innerWidth / 2;
+    const midY = window.innerHeight / 2;
+
+    let tooltipX, tooltipY;
+
+    if (cursorX <= midX && cursorY <= midY) {
+        // Cursor is in the top-left quadrant
+        tooltipX = cursorX + 10;
+        tooltipY = cursorY + 10;
+    } else if (cursorX > midX && cursorY <= midY) {
+        // Cursor is in the top-right quadrant
         tooltipX = cursorX - tooltipRect.width - 10;
+        tooltipY = cursorY + 10;
+    } else if (cursorX <= midX && cursorY > midY) {
+        // Cursor is in the bottom-left quadrant
+        tooltipX = cursorX + 10;
+        tooltipY = cursorY - tooltipRect.height - 10;
+    } else {
+        // Cursor is in the bottom-right quadrant
+        tooltipX = cursorX - tooltipRect.width - 10;
+        tooltipY = cursorY - tooltipRect.height - 10;
     }
-    tooltip.style.left = tooltipX + window.scrollX + "px";
 
-    let tooltipY = cursorY - 15;
-    if (tooltipY + tooltipRect.height > window.innerHeight + window.scrollY) {
-        tooltipY = cursorY - tooltipRect.height + 15;
-    }
-    tooltip.style.top = tooltipY + window.scrollY + "px";
+    tooltip.style.left = tooltipX + "px";
+    tooltip.style.top = tooltipY + "px";
+}
 
+function showTooltip(event: MouseEvent, selection: HierarchyPointNode<ExpandedItem>) {
+    setTooltipHTML(selection);
+    positionTooltip(event);
     tooltip.style.opacity = "1";
 }
 

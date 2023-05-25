@@ -104,12 +104,21 @@
   font-style: italic;
 }
 
+#tree .node .lang {
+  font-size: smaller;
+}
+
+#tree .node .romanization {
+  font-size: smaller;
+}
+
 #tooltip {
   opacity: 0;
   transition: opacity 0.05s ease;
   position: absolute;
-  text-align: center;
-  padding: .5rem;
+  max-width: 500px;
+  text-align: left;
+  padding: 0rem 0.5rem;
   background: #FFFFFF;
   color: #313639;
   border: 1px solid #313639;
@@ -118,10 +127,37 @@
   /* font-size: 1.3rem; */
 }
 
-.tree-node-lang {
+#tooltip p,
+#tooltip div {
+  margin-top: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+#tooltip .lang {
+  font-size: larger;
+}
+
+#tooltip .term {
+  font-weight: bold;
+}
+
+#tooltip .imputed {
+  font-style: italic;
+  color: dimgray;
+}
+
+#tooltip .pos-line {
+  white-space: normal;
+}
+
+#tooltip .ety-mode {
+  font-style: italic;
+}
+
+#tooltip .ety-prep {
   font-size: smaller;
 }
 
-.tree-node-romanization {
-  font-size: smaller;
+#tooltip .parent-term {
+  font-weight: bold;
 }
