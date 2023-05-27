@@ -9,7 +9,7 @@ let langSuggestionsListHovered = false;
 export let langSelectedId = -1;
 let langFetchTimeout: number;
 
-export const api = window.location.hostname === 'localhost' ? 'http://localhost:3000/' : 'https://api.wety.org/';
+export const api = window.location.hostname === 'localhost' ? 'http://localhost/' : 'http://api.wety.org/';
 
 function displayLangSuggestions() {
     langSuggestionsList.innerHTML = '';
