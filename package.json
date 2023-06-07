@@ -4,7 +4,8 @@
     "ts-loader": "^9.4.2",
     "typescript": "^5.0.4",
     "webpack": "^5.79.0",
-    "webpack-cli": "^5.0.1"
+    "webpack-cli": "^5.0.1",
+    "http-server": "^13.0.1"
   },
   "dependencies": {
     "d3": "^7.8.4"
@@ -12,6 +13,7 @@
   "scripts": {
     "build": "webpack --mode production",
     "watch": "webpack --watch",
-    "dev": "webpack --mode development"
+    "dev": "webpack --mode development",
+    "start": "http-server -p 8000"
   }
 }
