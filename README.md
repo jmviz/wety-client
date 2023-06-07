@@ -8,20 +8,13 @@ For local development, you'll need to set up both the `wety` server and the `wet
 Follow the instructions in the [`wety`](https://github.com/jmviz/wety) repo to set up and run the server.
 
 ### Client
-Clone this repo:
+If you don't have `node` and `npm` installed, [install them](https://docs.npmjs.com/downloading-and-installing-node-js-and-npm). Clone this repo and `cd` into it. Then install the dependencies:
 
 ```bash
-git clone https://github.com/jmviz/wety-client.git
-```
-
-Install dependencies:
-
-```bash
-cd wety-client
 npm install
 ```
 
-Start the client server:
+You can then start the client server:
 
 ```bash
 npm start
