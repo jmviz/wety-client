@@ -2,7 +2,7 @@ import { LangMatch, LangMatches, Item, ItemMatch, ItemMatches } from "./types";
 import { getHeadProgenitorTree } from "./tree";
 
 const langSearchInput = document.getElementById('lang-input') as HTMLInputElement;
-const langSuggestionsList = document.getElementById('lang-suggestions')!;
+const langSuggestionsList = document.getElementById('lang-suggestions') as HTMLUListElement;
 let langSuggestions: LangMatch[] = [];
 let langSelectedSuggestionIndex = -1;
 let langSuggestionsListHovered = false;
@@ -123,7 +123,7 @@ function updateSelectedLangSuggestion() {
 ///////////////////////////
 
 const termSearchInput = document.getElementById('term-input') as HTMLInputElement;
-const termSuggestionsList = document.getElementById('term-suggestions')!;
+const termSuggestionsList = document.getElementById('term-suggestions') as HTMLUListElement;
 let termSuggestions: ItemMatch[] = [];
 let termSelectedSuggestionIndex = -1;
 let termSuggestionsListHovered = false;

@@ -8,8 +8,8 @@ import { HierarchyPointLink, HierarchyPointNode } from "d3";
 
 let treeData: ExpandedItem | null = null;
 let treeResizeTimeout: number;
-const ety = document.getElementById("ety")!;
-const tooltip = document.getElementById("tooltip")!;
+const ety = document.getElementById("ety") as HTMLDivElement;
+const tooltip = document.getElementById("tooltip") as HTMLDivElement;
 
 window.addEventListener("resize", resizeTree);
 
@@ -33,7 +33,7 @@ export async function getHeadProgenitorTree() {
 function displayHeadProgenitorTree() {
     ety.innerHTML = '';
     if (treeData === null) return;
-    let tree = HeadProgenitorTreeSVG(treeData, {
+    const tree = HeadProgenitorTreeSVG(treeData, {
         width: ety.clientWidth,
     });
     if (tree === null) return;
@@ -73,9 +73,18 @@ function langColor(distance: number | null) {
 // Released under the ISC license.
 // https://observablehq.com/@d3/tree
 function HeadProgenitorTreeSVG(data: ExpandedItem, {
-    layout = cluster, // layout algorithm (typically d3.tree or d3.cluster)
+    layoutAlg = cluster, // layout algorithm (typically d3.tree or d3.cluster)
     width = 640, // outer width, in pixels
-    padding = 1, // horizontal padding for first and last column
+    padding = {
+        outer: {
+            vertical: 5, 
+            horizontal: 5, 
+        },
+        node: {
+            // vertical: 1, 
+            horizontal: 1,
+        },
+    }, // tree padding, in pixels
     stroke = "#555", // stroke for links
     strokeWidth = 1.5, // stroke width for links
     strokeOpacity = 0.4, // stroke opacity for links
@@ -83,11 +92,11 @@ function HeadProgenitorTreeSVG(data: ExpandedItem, {
     strokeLinecap = "butt", // stroke line cap for links
     halo = "#fff", // color of label halo 
     haloWidth = 3, // padding around the labels
-    curve = curveStepBefore, // curve for the link
+    curveAlg = curveStepBefore, // curve for the link
 } = {}) {
 
     // https://github.com/d3/d3-hierarchy#hierarchy
-    let root = hierarchy<ExpandedItem>(data, (d: ExpandedItem) => d.children);
+    const root = hierarchy<ExpandedItem>(data, (d: ExpandedItem) => d.children);
 
     root
         .count() // counts node leaves and assigns count to .value
@@ -95,11 +104,11 @@ function HeadProgenitorTreeSVG(data: ExpandedItem, {
 
     // Compute the layout.
     const dx = 12;
-    const dy = width / (root.height + padding);
-    let root_layout = layout<ExpandedItem>()
+    const dy = width / (root.height + padding.node.horizontal);
+    const layout = layoutAlg<ExpandedItem>()
         .nodeSize([dx, dy])
-        .separation((a, b) => a.parent == b.parent ? 2.5 : 3)
-        (root);
+        .separation((a, b) => a.parent == b.parent ? 2.5 : 3);
+    const root_layout = layout(root);
 
     // Center the tree.
     let x0 = Infinity;
@@ -112,12 +121,19 @@ function HeadProgenitorTreeSVG(data: ExpandedItem, {
     // Compute the height.
     const height = x1 - x0 + dx * 2;
 
+    const viewBox = [
+        -dy * padding.node.horizontal / 2 - padding.outer.horizontal, 
+        x0 - dx - padding.outer.vertical, 
+        width + padding.outer.horizontal, 
+        height + padding.outer.vertical
+    ];
+
     const svg = create("svg")
         .attr("version", "1.1")
         .attr("xmlns", "http://www.w3.org/2000/svg")
         .attr("xmlns:xlink", "http://www.w3.org/1999/xlink")
         .attr("xmlns:xhtml", "http://www.w3.org/1999/xhtml")
-        .attr("viewBox", [-dy * padding / 2, x0 - dx - 5, width, height])
+        .attr("viewBox", viewBox)
         .attr("width", width)
         .attr("height", height)
         .attr("style", "max-width: 100%; height: auto; height: intrinsic;")
@@ -134,7 +150,7 @@ function HeadProgenitorTreeSVG(data: ExpandedItem, {
         .selectAll("path")
         .data(root_layout.links())
         .join("path")
-        .attr("d", link<HierarchyPointLink<any>, HierarchyPointNode<any>>(curve)
+        .attr("d", link<HierarchyPointLink<ExpandedItem>, HierarchyPointNode<ExpandedItem>>(curveAlg)
             .x(d => d.y)
             .y(d => d.x));
 
@@ -152,7 +168,8 @@ function HeadProgenitorTreeSVG(data: ExpandedItem, {
         .attr("text-anchor", d => d.children ? "end" : "start")
         .attr("paint-order", "stroke")
         .attr("stroke", halo)
-        .attr("stroke-width", haloWidth);
+        .attr("stroke-width", haloWidth)
+        .attr("text-rendering", "optimizeLegibility");
 
     text.append("tspan")
         .attr("class", "lang")
@@ -160,6 +177,7 @@ function HeadProgenitorTreeSVG(data: ExpandedItem, {
         .attr("text-anchor", "middle")
         .attr("dy", "-1.0em")
         .attr("fill", d => langColor(d.data.langDistance))
+        .attr("text-rendering", "optimizeLegibility")
         .text(d => d.data.item.lang);
 
     text.append("tspan")
@@ -167,6 +185,7 @@ function HeadProgenitorTreeSVG(data: ExpandedItem, {
         .attr("x", 0)
         .attr("text-anchor", "middle")
         .attr("dy", "1.0em")
+        .attr("text-rendering", "optimizeLegibility")
         .text(d => d.data.item.term);
 
     text.append("tspan")
@@ -174,6 +193,7 @@ function HeadProgenitorTreeSVG(data: ExpandedItem, {
         .attr("x", 0)
         .attr("text-anchor", "middle")
         .attr("dy", "1.0em")
+        .attr("text-rendering", "optimizeLegibility")
         .text(d => d.data.item.romanization ? `(${d.data.item.romanization})` : "");
 
     node.on("mouseover", (e: MouseEvent, d) => showTooltip(e, d));
