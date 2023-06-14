@@ -1,13 +1,17 @@
 # wety-client
+
 This is the frontend for [`wety.org`](https://www.wety.org/). See the [`wety`](https://github.com/jmviz/wety) repository for the data processing and server code.
 
 ## Local development
+
 For local development, you'll need to set up both the `wety` server and the `wety-client` server.
 
 ### Server
+
 Follow the instructions in the [`wety`](https://github.com/jmviz/wety) repo to set up and run the server.
 
 ### Client
+
 If you don't have `node` and `npm` installed, [install them](https://docs.npmjs.com/downloading-and-installing-node-js-and-npm). Clone this repo and `cd` into it. Then install the dependencies:
 
 ```bash

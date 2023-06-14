@@ -1,37 +1,38 @@
 import { ExpandedItem } from "./types";
 import { api, langSelectedId, termSelectedId } from "./search";
+import { setNodeTooltipListeners } from "./tooltip";
 
 import { create } from "d3-selection";
 import { link, curveStepBefore } from "d3-shape";
 import { cluster, hierarchy } from "d3-hierarchy";
 import { HierarchyPointLink, HierarchyPointNode } from "d3";
 
+const ety = document.getElementById("ety") as HTMLDivElement;
 let treeData: ExpandedItem | null = null;
 let treeResizeTimeout: number;
-const ety = document.getElementById("ety") as HTMLDivElement;
-const tooltip = document.getElementById("tooltip") as HTMLDivElement;
-
-window.addEventListener("resize", resizeTree);
 
 function resizeTree() {
     window.clearTimeout(treeResizeTimeout);
     treeResizeTimeout = window.setTimeout(displayHeadProgenitorTree, 500);
 }
 
+window.addEventListener("resize", resizeTree);
+
 export async function getHeadProgenitorTree() {
     try {
-        const response = await fetch(`${api}headProgenitorTree/${termSelectedId}/filter/${langSelectedId}`);
+        const response = await fetch(
+            `${api}headProgenitorTree/${termSelectedId}/filter/${langSelectedId}`,
+        );
         treeData = await response.json();
         console.log(treeData);
         displayHeadProgenitorTree();
-
     } catch (error) {
         console.error(error);
     }
 }
 
 function displayHeadProgenitorTree() {
-    ety.innerHTML = '';
+    ety.innerHTML = "";
     if (treeData === null) return;
     const tree = HeadProgenitorTreeSVG(treeData, {
         width: ety.clientWidth,
@@ -60,10 +61,11 @@ const langDistanceColors = [
 // const langUnrelatedColor = "#767676";
 const langUnrelatedColor = "#000000";
 
-function langColor(distance: number | null) {
+export function langColor(distance: number | null) {
     if (distance === null) return langUnrelatedColor;
     if (distance < 0) return langDistanceColors[0];
-    if (distance > langDistanceColors.length) return langDistanceColors[langDistanceColors.length - 1];
+    if (distance > langDistanceColors.length)
+        return langDistanceColors[langDistanceColors.length - 1];
     return langDistanceColors[distance];
 }
 
@@ -72,34 +74,35 @@ function langColor(distance: number | null) {
 // Copyright 2021 Observable, Inc.
 // Released under the ISC license.
 // https://observablehq.com/@d3/tree
-function HeadProgenitorTreeSVG(data: ExpandedItem, {
-    layoutAlg = cluster, // layout algorithm (typically d3.tree or d3.cluster)
-    width = 640, // outer width, in pixels
-    padding = {
-        outer: {
-            vertical: 5, 
-            horizontal: 5, 
-        },
-        node: {
-            // vertical: 1, 
-            horizontal: 1,
-        },
-    }, // tree padding, in pixels
-    stroke = "#555", // stroke for links
-    strokeWidth = 1.5, // stroke width for links
-    strokeOpacity = 0.4, // stroke opacity for links
-    strokeLinejoin = "miter", // stroke line join for links
-    strokeLinecap = "butt", // stroke line cap for links
-    halo = "#fff", // color of label halo 
-    haloWidth = 3, // padding around the labels
-    curveAlg = curveStepBefore, // curve for the link
-} = {}) {
-
+function HeadProgenitorTreeSVG(
+    data: ExpandedItem,
+    {
+        layoutAlg = cluster, // layout algorithm (typically d3.tree or d3.cluster)
+        width = 640, // outer width, in pixels
+        padding = {
+            outer: {
+                vertical: 5,
+                horizontal: 5,
+            },
+            node: {
+                // vertical: 1,
+                horizontal: 1,
+            },
+        }, // tree padding, in pixels
+        stroke = "#555", // stroke for links
+        strokeWidth = 1.5, // stroke width for links
+        strokeOpacity = 0.4, // stroke opacity for links
+        strokeLinejoin = "miter", // stroke line join for links
+        strokeLinecap = "butt", // stroke line cap for links
+        halo = "#fff", // color of label halo
+        haloWidth = 3, // padding around the labels
+        curveAlg = curveStepBefore, // curve for the link
+    } = {},
+) {
     // https://github.com/d3/d3-hierarchy#hierarchy
     const root = hierarchy<ExpandedItem>(data, (d: ExpandedItem) => d.children);
 
-    root
-        .count() // counts node leaves and assigns count to .value
+    root.count() // counts node leaves and assigns count to .value
         .sort((a, b) => b.height - a.height || (b.value ?? 0) - (a.value ?? 0));
 
     // Compute the layout.
@@ -107,13 +110,13 @@ function HeadProgenitorTreeSVG(data: ExpandedItem, {
     const dy = width / (root.height + padding.node.horizontal);
     const layout = layoutAlg<ExpandedItem>()
         .nodeSize([dx, dy])
-        .separation((a, b) => a.parent == b.parent ? 2.5 : 3);
+        .separation((a, b) => (a.parent == b.parent ? 2.5 : 3));
     const root_layout = layout(root);
 
     // Center the tree.
     let x0 = Infinity;
     let x1 = -x0;
-    root_layout.each(d => {
+    root_layout.each((d) => {
         if (d.x > x1) x1 = d.x;
         if (d.x < x0) x0 = d.x;
     });
@@ -122,10 +125,10 @@ function HeadProgenitorTreeSVG(data: ExpandedItem, {
     const height = x1 - x0 + dx * 2;
 
     const viewBox = [
-        -dy * padding.node.horizontal / 2 - padding.outer.horizontal, 
-        x0 - dx - padding.outer.vertical, 
-        width + padding.outer.horizontal, 
-        height + padding.outer.vertical
+        (-dy * padding.node.horizontal) / 2 - padding.outer.horizontal,
+        x0 - dx - padding.outer.vertical,
+        width + padding.outer.horizontal,
+        height + padding.outer.vertical,
     ];
 
     const svg = create("svg")
@@ -150,22 +153,28 @@ function HeadProgenitorTreeSVG(data: ExpandedItem, {
         .selectAll("path")
         .data(root_layout.links())
         .join("path")
-        .attr("d", link<HierarchyPointLink<ExpandedItem>, HierarchyPointNode<ExpandedItem>>(curveAlg)
-            .x(d => d.y)
-            .y(d => d.x));
+        .attr(
+            "d",
+            link<
+                HierarchyPointLink<ExpandedItem>,
+                HierarchyPointNode<ExpandedItem>
+            >(curveAlg)
+                .x((d) => d.y)
+                .y((d) => d.x),
+        );
 
-    const node = svg.append("g")
-        .selectAll("a")
+    const node = svg
+        .append("g")
+        .selectAll("g")
         .data(root_layout.descendants())
-        .join("a")
-        .attr("xlink:href", d => d.data.item.url)
-        .attr("target", "_blank")
-        .attr("transform", d => `translate(${d.y},${d.x})`)
+        .join("g")
+        .attr("transform", (d) => `translate(${d.y},${d.x})`)
         .attr("class", "node");
 
-    const text = node.append("text")
-        .attr("x", d => d.children ? -6 : 6)
-        .attr("text-anchor", d => d.children ? "end" : "start")
+    const text = node
+        .append("text")
+        .attr("x", (d) => (d.children ? -6 : 6))
+        .attr("text-anchor", (d) => (d.children ? "end" : "start"))
         .attr("paint-order", "stroke")
         .attr("stroke", halo)
         .attr("stroke-width", haloWidth)
@@ -176,9 +185,9 @@ function HeadProgenitorTreeSVG(data: ExpandedItem, {
         .attr("x", 0)
         .attr("text-anchor", "middle")
         .attr("dy", "-1.0em")
-        .attr("fill", d => langColor(d.data.langDistance))
+        .attr("fill", (d) => langColor(d.data.langDistance))
         .attr("text-rendering", "optimizeLegibility")
-        .text(d => d.data.item.lang);
+        .text((d) => d.data.item.lang);
 
     text.append("tspan")
         .attr("class", "term")
@@ -186,7 +195,7 @@ function HeadProgenitorTreeSVG(data: ExpandedItem, {
         .attr("text-anchor", "middle")
         .attr("dy", "1.0em")
         .attr("text-rendering", "optimizeLegibility")
-        .text(d => d.data.item.term);
+        .text((d) => d.data.item.term);
 
     text.append("tspan")
         .attr("class", "romanization")
@@ -194,130 +203,11 @@ function HeadProgenitorTreeSVG(data: ExpandedItem, {
         .attr("text-anchor", "middle")
         .attr("dy", "1.0em")
         .attr("text-rendering", "optimizeLegibility")
-        .text(d => d.data.item.romanization ? `(${d.data.item.romanization})` : "");
+        .text((d) =>
+            d.data.item.romanization ? `(${d.data.item.romanization})` : "",
+        );
 
-    node.on("mouseover", (e: MouseEvent, d) => showTooltip(e, d));
-
-    node.on("mouseout", hideTooltip);
+    setNodeTooltipListeners(node);
 
     return svg.node();
 }
-
-function etyPrep(etyMode: string): string {
-    switch (etyMode) {
-        case 'derived':
-        case 'inherited':
-        case 'borrowed':
-        case 'back-formation':
-            return 'from';
-        case 'compound':
-        case 'univerbation':
-        case 'transfix':
-        case 'surface analysis':
-        case 'suffix':
-        case 'prefix':
-        case 'infix':
-        case 'confix':
-        case 'circumfix':
-        case 'blend':
-        case 'affix':
-            return 'with';
-        case 'root':
-            return 'reflex of';
-        case 'mention':
-            return 'in';
-        default:
-            return 'of';
-    }
-}
-
-function setTooltipHTML(selection: HierarchyPointNode<ExpandedItem>) {
-    tooltip.innerHTML = '';
-
-    const item = selection.data.item;
-    const parent = selection.parent ? {
-        lang: selection.parent.data.item.lang,
-        term: selection.parent.data.item.term,
-        langDistance: selection.parent.data.langDistance,
-    } : null;
-
-    const lang = document.createElement('p');
-    lang.classList.add('lang');
-    lang.style.color = langColor(selection.data.langDistance);
-    lang.textContent = `${item.lang}`;
-    tooltip.appendChild(lang);
-
-    const term = document.createElement('p');
-    term.innerHTML = `<span class="term">${item.term}</span>` + (item.romanization ? ` <span class="romanization">(${item.romanization})</span>` : '');
-    tooltip.appendChild(term);
-
-    if (item.imputed) {
-        const imputed = document.createElement('div');
-        imputed.classList.add('pos-line');
-        imputed.innerHTML = `<span class="imputed">(imputed)</span>`;
-        tooltip.appendChild(imputed);
-    } else if (item.pos && item.gloss && item.pos.length === item.gloss.length) {
-        const posGloss = document.createElement('div');
-        const posList = item.pos ?? [];
-        const glossList = item.gloss ?? [];
-        for (let i = 0; i < posList.length; i++) {
-            const pos = posList[i];
-            const gloss = glossList[i];
-            const posLine = document.createElement('div');
-            posLine.classList.add('pos-line');
-            posLine.innerHTML = `<span class="pos">${pos}</span>: <span class="gloss">${gloss}</span>`;
-            posGloss.appendChild(posLine);
-        }
-        tooltip.appendChild(posGloss);
-    }
-
-    if (item.etyMode && parent) {
-        const ety = document.createElement('p');
-        const prep = etyPrep(item.etyMode);
-        const color = langColor(parent.langDistance);
-        ety.innerHTML = `<span class="ety-mode">${item.etyMode}</span> <span class="ety-prep">${prep}</span> <span class="parent-lang" style="color: ${color};">${parent.lang}</span> <span class="parent-term">${parent.term}</span>`
-        tooltip.appendChild(ety);
-    }
-}
-
-function positionTooltip(event: MouseEvent) {
-    const tooltipRect = tooltip.getBoundingClientRect();
-    const cursorX = event.clientX + window.scrollX;
-    const cursorY = event.clientY + window.scrollY;
-
-    const midX = window.innerWidth / 2;
-    const midY = window.innerHeight / 2;
-
-    let tooltipX, tooltipY;
-
-    if (cursorX <= midX && cursorY <= midY) {
-        // Cursor is in the top-left quadrant
-        tooltipX = cursorX + 10;
-        tooltipY = cursorY + 10;
-    } else if (cursorX > midX && cursorY <= midY) {
-        // Cursor is in the top-right quadrant
-        tooltipX = cursorX - tooltipRect.width - 10;
-        tooltipY = cursorY + 10;
-    } else if (cursorX <= midX && cursorY > midY) {
-        // Cursor is in the bottom-left quadrant
-        tooltipX = cursorX + 10;
-        tooltipY = cursorY - tooltipRect.height - 10;
-    } else {
-        // Cursor is in the bottom-right quadrant
-        tooltipX = cursorX - tooltipRect.width - 10;
-        tooltipY = cursorY - tooltipRect.height - 10;
-    }
-
-    tooltip.style.left = tooltipX + "px";
-    tooltip.style.top = tooltipY + "px";
-}
-
-function showTooltip(event: MouseEvent, selection: HierarchyPointNode<ExpandedItem>) {
-    setTooltipHTML(selection);
-    positionTooltip(event);
-    tooltip.style.opacity = "1";
-}
-
-function hideTooltip() {
-    tooltip.style.opacity = "0";
-} 

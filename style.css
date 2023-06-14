@@ -1,163 +1,187 @@
 #search {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  padding: 20px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 20px;
 }
 
 .suggestions:not(.hidden) {
-  display: block;
+    display: block;
 }
 
 .hidden {
-  display: none;
+    display: none;
 }
 
 .suggestion-item {
-  padding: 5px 10px;
-  cursor: pointer;
+    padding: 5px 10px;
+    cursor: pointer;
 }
 
 .suggestion-item:hover,
 .suggestion-item.selected {
-  background-color: #ddd;
+    background-color: #ddd;
 }
 
 #lang-search {
-  position: relative;
-  width: 100%;
-  max-width: 250px;
-  margin-right: 20px;
+    position: relative;
+    width: 100%;
+    max-width: 250px;
+    margin-right: 20px;
 }
 
 #lang-input {
-  width: 100%;
-  padding: 12px 20px;
-  margin: 8px 0;
-  box-sizing: border-box;
-  border: none;
-  border-radius: 4px;
-  background-color: #f1f1f1;
+    width: 100%;
+    padding: 12px 20px;
+    margin: 8px 0;
+    box-sizing: border-box;
+    border: none;
+    border-radius: 4px;
+    background-color: #f1f1f1;
 }
 
 #lang-suggestions {
-  position: absolute;
-  z-index: 1;
-  top: 100%;
-  left: 0;
-  width: 100%;
-  margin-top: 0px;
-  padding: 0;
-  list-style: none;
-  background-color: #f1f1f1;
-  border-radius: 4px;
-  box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.2);
-  max-height: 200px;
-  overflow-y: auto;
+    position: absolute;
+    z-index: 1;
+    top: 100%;
+    left: 0;
+    width: 100%;
+    margin-top: 0px;
+    padding: 0;
+    list-style: none;
+    background-color: #f1f1f1;
+    border-radius: 4px;
+    box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.2);
+    max-height: 200px;
+    overflow-y: auto;
 }
 
 #term-search {
-  position: relative;
-  width: 100%;
-  max-width: 500px;
+    position: relative;
+    width: 100%;
+    max-width: 500px;
 }
 
 #term-input {
-  width: 100%;
-  padding: 12px 20px;
-  margin: 8px 0;
-  box-sizing: border-box;
-  border: none;
-  border-radius: 4px;
-  background-color: #f1f1f1;
+    width: 100%;
+    padding: 12px 20px;
+    margin: 8px 0;
+    box-sizing: border-box;
+    border: none;
+    border-radius: 4px;
+    background-color: #f1f1f1;
 }
 
 #term-suggestions {
-  position: absolute;
-  z-index: 1;
-  top: 100%;
-  left: 0;
-  width: 100%;
-  margin-top: 0px;
-  padding: 0;
-  list-style: none;
-  background-color: #f1f1f1;
-  border-radius: 4px;
-  box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.2);
-  max-height: 500px;
-  overflow-y: auto;
+    position: absolute;
+    z-index: 1;
+    top: 100%;
+    left: 0;
+    width: 100%;
+    margin-top: 0px;
+    padding: 0;
+    list-style: none;
+    background-color: #f1f1f1;
+    border-radius: 4px;
+    box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.2);
+    max-height: 500px;
+    overflow-y: auto;
 }
 
 .term-line {
-  margin-bottom: 5px;
+    margin-bottom: 5px;
 }
 
 .pos-line {
-  margin-left: 10px;
-  font-size: smaller;
-  white-space: nowrap;
-  /* overflow: hidden;
+    margin-left: 10px;
+    font-size: smaller;
+    white-space: nowrap;
+    /* overflow: hidden;
   text-overflow: ellipsis; */
 }
 
 .pos {
-  font-style: italic;
+    font-style: italic;
 }
 
 #tree .node .lang {
-  font-size: smaller;
+    font-size: smaller;
 }
 
 #tree .node .romanization {
-  font-size: smaller;
+    font-size: smaller;
 }
 
 #tooltip {
-  opacity: 0;
-  transition: opacity 0.05s ease;
-  position: absolute;
-  max-width: 500px;
-  text-align: left;
-  padding: 0rem 0.5rem;
-  background: #FFFFFF;
-  color: #313639;
-  border: 1px solid #313639;
-  border-radius: 8px;
-  pointer-events: none;
-  /* font-size: 1.3rem; */
+    opacity: 0;
+    z-index: -9000;
+    transition: opacity 0.05s ease;
+    position: absolute;
+    max-width: 500px;
+    text-align: left;
+    padding: 0rem 0.5rem;
+    background: #ffffff;
+    color: #313639;
+    border: 1px solid #313639;
+    border-radius: 8px;
+    /* font-size: 1.3rem; */
+}
+
+#tooltip .close-button {
+    position: absolute;
+    background-color: transparent;
+    top: 0;
+    right: 0;
+    width: 20px;
+    height: 20px;
+    font-weight: bold;
+    color: #313639;
+    opacity: 50%;
+    border: none;
+    cursor: pointer;
 }
 
 #tooltip p,
 #tooltip div {
-  margin-top: 0.5rem;
-  margin-bottom: 0.5rem;
+    margin-top: 0.5rem;
+    margin-bottom: 0.5rem;
 }
 
 #tooltip .lang {
-  font-size: larger;
+    font-size: larger;
 }
 
 #tooltip .term {
-  font-weight: bold;
+    font-weight: bold;
 }
 
 #tooltip .imputed {
-  font-style: italic;
-  color: dimgray;
+    font-style: italic;
+    color: dimgray;
 }
 
 #tooltip .pos-line {
-  white-space: normal;
+    white-space: normal;
 }
 
 #tooltip .ety-mode {
-  font-style: italic;
+    font-style: italic;
 }
 
 #tooltip .ety-prep {
-  font-size: smaller;
+    font-size: smaller;
 }
 
 #tooltip .parent-term {
-  font-weight: bold;
+    font-weight: bold;
+}
+
+#tooltip .wiktionary-link-container {
+    text-align: right;
+    font-size: smaller;
+}
+
+#tooltip .wiktionary-link {
+    color: #313639;
+    text-decoration: underline;
 }

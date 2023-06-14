@@ -1,32 +1,39 @@
 <!DOCTYPE html>
 <html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <meta http-equiv="X-UA-Compatible" content="ie=edge" />
+        <title>wety</title>
+        <link rel="stylesheet" href="style.css" />
+    </head>
 
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta http-equiv="X-UA-Compatible" content="ie=edge">
-    <title>wety</title>
-    <link rel="stylesheet" href="style.css">
-</head>
-
-<body>
-    <header>
-        <div id="search">
-            <div id="lang-search">
-                <input id="lang-input" type="text" placeholder="Language...">
-                <ul id="lang-suggestions" class="suggestions"></ul>
+    <body>
+        <header>
+            <div id="search">
+                <div id="lang-search">
+                    <input
+                        id="lang-input"
+                        type="text"
+                        placeholder="Language..."
+                    />
+                    <ul id="lang-suggestions" class="suggestions"></ul>
+                </div>
+                <div id="term-search">
+                    <input
+                        id="term-input"
+                        type="text"
+                        placeholder="Term..."
+                        dir="auto"
+                    />
+                    <ul id="term-suggestions" class="suggestions"></ul>
+                </div>
             </div>
-            <div id="term-search">
-                <input id="term-input" type="text" placeholder="Term..." dir="auto">
-                <ul id="term-suggestions" class="suggestions"></ul>
-            </div>
-        </div>
-    </header>
-    <main>
-        <div id="ety"></div>
-        <div id="tooltip"></div>
-    </main>
-    <script src="dist/bundle.js"></script>
-</body>
-
+        </header>
+        <main>
+            <div id="ety"></div>
+            <div id="tooltip"></div>
+        </main>
+        <script src="dist/bundle.js"></script>
+    </body>
 </html>
