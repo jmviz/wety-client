@@ -1,8 +1,8 @@
-import { ExpandedItem } from "./types";
+import { ExpandedItem, ExpandedItemNode } from "./types";
 import { api, langSelectedId, termSelectedId } from "./search";
 import { setNodeTooltipListeners } from "./tooltip";
 
-import { create } from "d3-selection";
+import { create, Selection } from "d3-selection";
 import { link, curveStepBefore } from "d3-shape";
 import { cluster, hierarchy } from "d3-hierarchy";
 import { HierarchyPointLink, HierarchyPointNode } from "d3";
@@ -34,12 +34,19 @@ export async function getHeadProgenitorTree() {
 function displayHeadProgenitorTree() {
     ety.innerHTML = "";
     if (treeData === null) return;
-    const tree = HeadProgenitorTreeSVG(treeData, {
+    const {
+        tree: tree,
+        node: node,
+        nodeBackground: nodeBackground,
+    } = headProgenitorTreeSVG(treeData, {
         width: ety.clientWidth,
     });
     if (tree === null) return;
     tree.setAttribute("id", "tree");
+    tree.style.opacity = "0";
     ety.appendChild(tree);
+    addSVGTextBackgrounds(node, nodeBackground);
+    tree.style.opacity = "1";
 }
 
 // https://accessiblepalette.com/?lightness=98.2,93.95,85.1,76.5,67.65,52,47.6,40.4,32.4,23.55&770039=1,12&720614=1,0&672000=1,0&493500=1,0&224000=1,0&004300=1,0&004a32=1,0&004f64=1,0&004e94=1,0&003c88=1,0&2e2d79=1,0&750039=1,0
@@ -74,7 +81,7 @@ export function langColor(distance: number | null) {
 // Copyright 2021 Observable, Inc.
 // Released under the ISC license.
 // https://observablehq.com/@d3/tree
-function HeadProgenitorTreeSVG(
+function headProgenitorTreeSVG(
     data: ExpandedItem,
     {
         layoutAlg = cluster, // layout algorithm (typically d3.tree or d3.cluster)
@@ -94,8 +101,6 @@ function HeadProgenitorTreeSVG(
         strokeOpacity = 0.4, // stroke opacity for links
         strokeLinejoin = "miter", // stroke line join for links
         strokeLinecap = "butt", // stroke line cap for links
-        halo = "#fff", // color of label halo
-        haloWidth = 3, // padding around the labels
         curveAlg = curveStepBefore, // curve for the link
     } = {},
 ) {
@@ -143,6 +148,7 @@ function HeadProgenitorTreeSVG(
         .attr("font-family", "sans-serif")
         .attr("font-size", 10);
 
+    // the lines forming the tree
     svg.append("g")
         .attr("fill", "none")
         .attr("stroke", stroke)
@@ -163,51 +169,89 @@ function HeadProgenitorTreeSVG(
                 .y((d) => d.x),
         );
 
+    const descendants: ExpandedItemNode[] = root_layout
+        .descendants()
+        .map(function (d) {
+            return { node: d, bbox: new DOMRect(0, 0, 0, 0) };
+        });
+
+    // placeholder rects for text backgrounds to be set in addSVGTextBackgrounds()
+    const nodeBackground = svg
+        .append("g")
+        .selectAll<SVGRectElement, unknown>("rect")
+        .data(descendants)
+        .join("rect")
+        .attr("class", "node-background");
+
+    // the text nodes
     const node = svg
         .append("g")
-        .selectAll("g")
-        .data(root_layout.descendants())
-        .join("g")
-        .attr("transform", (d) => `translate(${d.y},${d.x})`)
-        .attr("class", "node");
-
-    const text = node
-        .append("text")
-        .attr("x", (d) => (d.children ? -6 : 6))
-        .attr("text-anchor", (d) => (d.children ? "end" : "start"))
-        .attr("paint-order", "stroke")
-        .attr("stroke", halo)
-        .attr("stroke-width", haloWidth)
+        .selectAll<SVGTextElement, unknown>("text")
+        .data(descendants)
+        .join("text")
+        .attr("class", "node")
+        .attr("transform", (d) => `translate(${d.node.y},${d.node.x})`)
+        .attr("x", (d) => (d.node.children ? -6 : 6))
+        .attr("text-anchor", (d) => (d.node.children ? "end" : "start"))
         .attr("text-rendering", "optimizeLegibility");
 
-    text.append("tspan")
+    node.append("tspan")
         .attr("class", "lang")
         .attr("x", 0)
         .attr("text-anchor", "middle")
         .attr("dy", "-1.0em")
-        .attr("fill", (d) => langColor(d.data.langDistance))
+        .attr("fill", (d) => langColor(d.node.data.langDistance))
         .attr("text-rendering", "optimizeLegibility")
-        .text((d) => d.data.item.lang);
+        .text((d) => d.node.data.item.lang);
 
-    text.append("tspan")
+    node.append("tspan")
         .attr("class", "term")
         .attr("x", 0)
         .attr("text-anchor", "middle")
         .attr("dy", "1.0em")
         .attr("text-rendering", "optimizeLegibility")
-        .text((d) => d.data.item.term);
+        .text((d) => d.node.data.item.term);
 
-    text.append("tspan")
+    node.append("tspan")
         .attr("class", "romanization")
         .attr("x", 0)
         .attr("text-anchor", "middle")
         .attr("dy", "1.0em")
         .attr("text-rendering", "optimizeLegibility")
         .text((d) =>
-            d.data.item.romanization ? `(${d.data.item.romanization})` : "",
+            d.node.data.item.romanization
+                ? `(${d.node.data.item.romanization})`
+                : "",
         );
 
     setNodeTooltipListeners(node);
 
-    return svg.node();
+    return { tree: svg.node(), node: node, nodeBackground: nodeBackground };
+}
+
+function addSVGTextBackgrounds(
+    node: Selection<SVGTextElement, ExpandedItemNode, SVGGElement, undefined>,
+    nodeBackground: Selection<
+        SVGRectElement,
+        ExpandedItemNode,
+        SVGGElement,
+        undefined
+    >,
+) {
+    node.each(function (d) {
+        d.bbox = this.getBBox();
+    });
+
+    const xMargin = 4;
+    const yMargin = 3;
+    nodeBackground
+        .attr("width", (d) => d.bbox.width + 2 * xMargin)
+        .attr("height", (d) => d.bbox.height + 2 * yMargin)
+        .attr("transform", function (d) {
+            const x = d.node.y - xMargin;
+            const y = d.node.x - yMargin;
+            return `translate(${x},${y})`;
+        })
+        .attr("x", (d) => d.bbox.x)
+        .attr("y", (d) => d.bbox.y);
 }

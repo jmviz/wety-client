@@ -1,7 +1,7 @@
-import { ExpandedItem } from "./types";
+import { ExpandedItem, ExpandedItemNode } from "./types";
 import { langColor } from "./tree";
 
-import { Selection, HierarchyPointNode, BaseType } from "d3";
+import { Selection, HierarchyPointNode } from "d3";
 
 const tooltip = document.getElementById("tooltip") as HTMLDivElement;
 let tooltipHideTimeout: number;
@@ -13,17 +13,12 @@ tooltip.addEventListener("pointerenter", (event) => {
 tooltip.addEventListener("pointerleave", hideTooltip);
 
 export function setNodeTooltipListeners(
-    node: Selection<
-        BaseType,
-        HierarchyPointNode<ExpandedItem>,
-        SVGGElement,
-        undefined
-    >,
+    node: Selection<SVGTextElement, ExpandedItemNode, SVGGElement, undefined>,
 ) {
     // for non-mouse, show tooltip on pointerup
     node.on("pointerup", (event, d) => {
         if (event.pointerType !== "mouse") {
-            showTooltip(event, d, "fixed");
+            showTooltip(event, d.node, "fixed");
         }
     });
 
@@ -31,7 +26,7 @@ export function setNodeTooltipListeners(
     node.on("pointerenter", (event, d) => {
         if (event.pointerType === "mouse") {
             window.clearTimeout(tooltipHideTimeout);
-            showTooltip(event, d, "hover");
+            showTooltip(event, d.node, "hover");
         }
     });
 
@@ -151,6 +146,8 @@ function setTooltipHTML(selection: HierarchyPointNode<ExpandedItem>) {
 }
 
 function positionHoverTooltip(event: MouseEvent) {
+    tooltip.style.position = "absolute";
+
     const tooltipRect = tooltip.getBoundingClientRect();
     const cursorX = event.clientX + window.scrollX;
     const cursorY = event.clientY + window.scrollY;
@@ -183,7 +180,6 @@ function positionHoverTooltip(event: MouseEvent) {
 }
 
 function positionFixedTooltip() {
-    tooltip.style.display = "block";
     tooltip.style.position = "fixed";
     tooltip.style.top = "50%";
     tooltip.style.left = "50%";

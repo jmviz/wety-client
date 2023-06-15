@@ -112,11 +112,14 @@
     font-size: smaller;
 }
 
+#tree .node-background {
+    fill: #ffffff;
+}
+
 #tooltip {
     opacity: 0;
     z-index: -9000;
     transition: opacity 0.05s ease;
-    position: absolute;
     max-width: 500px;
     text-align: left;
     padding: 0rem 0.5rem;

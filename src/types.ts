@@ -1,4 +1,4 @@
-// API responses:
+import { HierarchyPointNode } from "d3-hierarchy";
 
 export interface LangMatch {
     code: string;
@@ -39,4 +39,9 @@ export interface ExpandedItem {
     item: Item;
     children: ExpandedItem[] | null;
     langDistance: number | null;
+}
+
+export interface ExpandedItemNode {
+    node: HierarchyPointNode<ExpandedItem>;
+    bbox: SVGRect;
 }
