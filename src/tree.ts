@@ -242,7 +242,7 @@ function addSVGTextBackgrounds(
         d.bbox = this.getBBox();
     });
 
-    const xMargin = 4;
+    const xMargin = 3;
     const yMargin = 3;
     nodeBackground
         .attr("width", (d) => d.bbox.width + 2 * xMargin)
