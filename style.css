@@ -104,18 +104,6 @@
     font-style: italic;
 }
 
-#tree .node .lang {
-    font-size: smaller;
-}
-
-#tree .node .romanization {
-    font-size: smaller;
-}
-
-#tree .node-background {
-    fill: #ffffff;
-}
-
 #tooltip {
     opacity: 0;
     z-index: -9000;

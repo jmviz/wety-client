@@ -26,7 +26,7 @@ function displayLangSuggestions() {
         return;
     }
     langSuggestionsList.classList.remove("hidden");
-    langSuggestions.forEach((suggestion, index) => {
+    langSuggestions.forEach((suggestion) => {
         const li = document.createElement("li");
         li.classList.add("suggestion-item");
         li.textContent = suggestion.name;
@@ -36,9 +36,6 @@ function displayLangSuggestions() {
             langSuggestionsList.classList.add("hidden");
         });
         langSuggestionsList.appendChild(li);
-        if (index === langSelectedSuggestionIndex) {
-            li.classList.add("selected");
-        }
     });
 }
 
@@ -181,18 +178,14 @@ function displayTermSuggestions() {
         return;
     }
     termSuggestionsList.classList.remove("hidden");
-    termSuggestions.forEach((suggestion, index) => {
+    termSuggestions.forEach((suggestion) => {
         const li = createTermSuggestionListItem(suggestion.item);
         termSuggestionsList.appendChild(li);
-        if (index === termSelectedSuggestionIndex) {
-            li.classList.add("selected");
-        }
     });
 }
 
 async function fetchTermSuggestions() {
     if (langSelectedId === -1) {
-        // add ui message here
         termSuggestionsList.innerHTML = "";
         return;
     }

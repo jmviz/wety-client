@@ -65,8 +65,7 @@ const langDistanceColors = [
     "#730138",
 ];
 
-// const langUnrelatedColor = "#767676";
-const langUnrelatedColor = "#000000";
+const langUnrelatedColor = "#696969";
 
 export function langColor(distance: number | null) {
     if (distance === null) return langUnrelatedColor;
@@ -87,18 +86,13 @@ function headProgenitorTreeSVG(
         layoutAlg = cluster, // layout algorithm (typically d3.tree or d3.cluster)
         width = 640, // outer width, in pixels
         padding = {
-            outer: {
-                vertical: 5,
-                horizontal: 5,
-            },
-            node: {
-                // vertical: 1,
-                horizontal: 1,
-            },
-        }, // tree padding, in pixels
+            // tree padding, in pixels
+            outer: 5,
+            node: 1,
+        },
         stroke = "#555", // stroke for links
-        strokeWidth = 1.5, // stroke width for links
-        strokeOpacity = 0.4, // stroke opacity for links
+        strokeWidth = 1.0, // stroke width for links
+        strokeOpacity = 1.0, // stroke opacity for links
         strokeLinejoin = "miter", // stroke line join for links
         strokeLinecap = "butt", // stroke line cap for links
         curveAlg = curveStepBefore, // curve for the link
@@ -112,10 +106,10 @@ function headProgenitorTreeSVG(
 
     // Compute the layout.
     const dx = 12;
-    const dy = width / (root.height + padding.node.horizontal);
+    const dy = width / (root.height + padding.node);
     const layout = layoutAlg<ExpandedItem>()
         .nodeSize([dx, dy])
-        .separation((a, b) => (a.parent == b.parent ? 2.5 : 3));
+        .separation((a, b) => (a.parent == b.parent ? 4 : 4));
     const root_layout = layout(root);
 
     // Center the tree.
@@ -130,10 +124,10 @@ function headProgenitorTreeSVG(
     const height = x1 - x0 + dx * 2;
 
     const viewBox = [
-        (-dy * padding.node.horizontal) / 2 - padding.outer.horizontal,
-        x0 - dx - padding.outer.vertical,
-        width + padding.outer.horizontal,
-        height + padding.outer.vertical,
+        (-dy * padding.node) / 2 - padding.outer,
+        x0 - dx,
+        width + padding.outer * 2,
+        height,
     ];
 
     const svg = create("svg")
@@ -145,8 +139,11 @@ function headProgenitorTreeSVG(
         .attr("width", width)
         .attr("height", height)
         .attr("style", "max-width: 100%; height: auto; height: intrinsic;")
-        .attr("font-family", "sans-serif")
-        .attr("font-size", 10);
+        .attr("shape-rendering", "crispEdges")
+        .attr("vector-effect", "non-scaling-stroke")
+        .attr("font-size", 12)
+        .attr("text-anchor", "middle")
+        .attr("text-rendering", "optimizeLegibility");
 
     // the lines forming the tree
     svg.append("g")
@@ -181,7 +178,7 @@ function headProgenitorTreeSVG(
         .selectAll<SVGRectElement, unknown>("rect")
         .data(descendants)
         .join("rect")
-        .attr("class", "node-background");
+        .attr("fill", "white");
 
     // the text nodes
     const node = svg
@@ -189,35 +186,28 @@ function headProgenitorTreeSVG(
         .selectAll<SVGTextElement, unknown>("text")
         .data(descendants)
         .join("text")
-        .attr("class", "node")
-        .attr("transform", (d) => `translate(${d.node.y},${d.node.x})`)
-        .attr("x", (d) => (d.node.children ? -6 : 6))
-        .attr("text-anchor", (d) => (d.node.children ? "end" : "start"))
-        .attr("text-rendering", "optimizeLegibility");
+        .attr("font-weight", (d) =>
+            d.node.data.item.id == termSelectedId ? "bold" : null,
+        )
+        .attr("transform", (d) => `translate(${d.node.y},${d.node.x})`);
 
     node.append("tspan")
         .attr("class", "lang")
         .attr("x", 0)
-        .attr("text-anchor", "middle")
-        .attr("dy", "-1.0em")
+        .attr("dy", "-0.92em")
         .attr("fill", (d) => langColor(d.node.data.langDistance))
-        .attr("text-rendering", "optimizeLegibility")
         .text((d) => d.node.data.item.lang);
 
     node.append("tspan")
         .attr("class", "term")
         .attr("x", 0)
-        .attr("text-anchor", "middle")
-        .attr("dy", "1.0em")
-        .attr("text-rendering", "optimizeLegibility")
+        .attr("dy", "1.2em")
         .text((d) => d.node.data.item.term);
 
     node.append("tspan")
         .attr("class", "romanization")
         .attr("x", 0)
-        .attr("text-anchor", "middle")
-        .attr("dy", "1.0em")
-        .attr("text-rendering", "optimizeLegibility")
+        .attr("dy", "1.3em")
         .text((d) =>
             d.node.data.item.romanization
                 ? `(${d.node.data.item.romanization})`
@@ -244,6 +234,7 @@ function addSVGTextBackgrounds(
 
     const xMargin = 3;
     const yMargin = 3;
+
     nodeBackground
         .attr("width", (d) => d.bbox.width + 2 * xMargin)
         .attr("height", (d) => d.bbox.height + 2 * yMargin)
