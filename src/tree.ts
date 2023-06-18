@@ -75,6 +75,10 @@ export function langColor(distance: number | null) {
     return langDistanceColors[distance];
 }
 
+// function roundToEven(num: number): number {
+//     return Math.round(num / 2) * 2;
+// }
+
 // This function is an adaption. Original copyright notice:
 //
 // Copyright 2021 Observable, Inc.
@@ -85,11 +89,6 @@ function headProgenitorTreeSVG(
     {
         layoutAlg = cluster, // layout algorithm (typically d3.tree or d3.cluster)
         width = 640, // outer width, in pixels
-        padding = {
-            // tree padding, in pixels
-            outer: 5,
-            node: 1,
-        },
         stroke = "#555", // stroke for links
         strokeWidth = 1.0, // stroke width for links
         strokeOpacity = 1.0, // stroke opacity for links
@@ -104,31 +103,31 @@ function headProgenitorTreeSVG(
     root.count() // counts node leaves and assigns count to .value
         .sort((a, b) => b.height - a.height || (b.value ?? 0) - (a.value ?? 0));
 
-    // Compute the layout.
-    const dx = 12;
-    const dy = width / (root.height + padding.node);
+    // The below is somewhat confusing as the d3 api assumes that the tree is
+    // oriented vertically, with the root at the top and the leaves at the
+    // bottom. But we are using a horizontal tree, with the root on the left and
+    // the leaves on the right. So d3 terms like e.g. `root.height` and `d.x`
+    // correspond in our case to width and y.
+
+    // root.height is the number of links between the root and the furthest leaf.
+    const dx = width / (root.height + 1);
+    const dy = 12;
     const layout = layoutAlg<ExpandedItem>()
-        .nodeSize([dx, dy])
+        .nodeSize([dy, dx])
         .separation((a, b) => (a.parent == b.parent ? 4 : 4));
     const root_layout = layout(root);
 
-    // Center the tree.
-    let x0 = Infinity;
-    let x1 = -x0;
+    // Center the tree vertically.
+    let y0 = Infinity;
+    let y1 = -y0;
     root_layout.each((d) => {
-        if (d.x > x1) x1 = d.x;
-        if (d.x < x0) x0 = d.x;
+        if (d.x > y1) y1 = d.x;
+        if (d.x < y0) y0 = d.x;
     });
 
-    // Compute the height.
-    const height = x1 - x0 + dx * 2;
+    const height = y1 - y0 + dy * 4;
 
-    const viewBox = [
-        (-dy * padding.node) / 2 - padding.outer,
-        x0 - dx,
-        width + padding.outer * 2,
-        height,
-    ];
+    const viewBox = [-dx / 2, y0 - dy * 2, width, height];
 
     const svg = create("svg")
         .attr("version", "1.1")
