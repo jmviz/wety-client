@@ -134,6 +134,10 @@ function headProgenitorTreeSVG(
 
     const viewBox = [-dx / 2, y0 - dy * 2, width, height];
 
+    // crispEdges implementation quality varies from browser to browser. It
+    // generally seems to work well but for example Windows Firefox renders
+    // random lines with 2px instead of 1px. Consider this as a solution:
+    // https://github.com/engray/subpixelFix.
     const svg = create("svg")
         .attr("version", "1.1")
         .attr("xmlns", "http://www.w3.org/2000/svg")

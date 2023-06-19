@@ -13,10 +13,17 @@ let langSuggestionsListHovered = false;
 export let langSelectedId = -1;
 let langFetchTimeout: number;
 
-export const api =
-    window.location.hostname === "127.0.0.1"
-        ? "http://127.0.0.1:3000/"
-        : "https://api.wety.org/";
+function getAPIAddress() {
+    switch (window.location.hostname) {
+        case "www.wety.org":
+        case "wety.org":
+            return "https://api.wety.org/";
+        default:
+            return "http://127.0.0.1:3000/";
+    }
+}
+
+export const api = getAPIAddress();
 
 function displayLangSuggestions() {
     langSuggestionsList.innerHTML = "";

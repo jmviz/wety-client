@@ -107,14 +107,14 @@
 #tooltip {
     opacity: 0;
     z-index: -9000;
-    transition: opacity 0.05s ease;
+    /* transition: opacity 0.05s ease; */
     max-width: 500px;
     text-align: left;
     padding: 0rem 0.5rem;
     background: #ffffff;
     color: #313639;
     border: 1px solid #313639;
-    border-radius: 8px;
+    border-radius: 5px;
     /* font-size: 1.3rem; */
 }
 

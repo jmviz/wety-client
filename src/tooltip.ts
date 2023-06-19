@@ -5,6 +5,7 @@ import { Selection, HierarchyPointNode } from "d3";
 
 const tooltip = document.getElementById("tooltip") as HTMLDivElement;
 let tooltipHideTimeout: number;
+let tooltipShowTimeout: number;
 tooltip.addEventListener("pointerenter", (event) => {
     if (event.pointerType === "mouse") {
         window.clearTimeout(tooltipHideTimeout);
@@ -16,23 +17,26 @@ export function setNodeTooltipListeners(
     node: Selection<SVGTextElement, ExpandedItemNode, SVGGElement, undefined>,
 ) {
     // for non-mouse, show tooltip on pointerup
-    node.on("pointerup", (event, d) => {
+    node.on("pointerup", function (event, d) {
         if (event.pointerType !== "mouse") {
-            showTooltip(event, d.node, "fixed");
+            showTooltip(d.node, this, "fixed");
         }
     });
 
     // for mouse, show tooltip on hover
-    node.on("pointerenter", (event, d) => {
+    node.on("pointerenter", function (event, d) {
         if (event.pointerType === "mouse") {
             window.clearTimeout(tooltipHideTimeout);
-            showTooltip(event, d.node, "hover");
+            tooltipShowTimeout = window.setTimeout(() => {
+                showTooltip(d.node, this, "hover");
+            }, 100);
         }
     });
 
     node.on("pointerleave", (event) => {
         if (event.pointerType === "mouse") {
-            tooltipHideTimeout = window.setTimeout(hideTooltip, 200);
+            window.clearTimeout(tooltipShowTimeout);
+            tooltipHideTimeout = window.setTimeout(hideTooltip, 100);
         }
     });
 }
@@ -68,14 +72,19 @@ function etyPrep(etyMode: string): string {
     }
 }
 
-function setTooltipHTML(selection: HierarchyPointNode<ExpandedItem>) {
+function setTooltipHTML(
+    selection: HierarchyPointNode<ExpandedItem>,
+    type: string,
+) {
     tooltip.innerHTML = "";
 
-    const closeButton = document.createElement("button");
-    closeButton.textContent = "✕";
-    closeButton.classList.add("close-button");
-    tooltip.appendChild(closeButton);
-    closeButton.addEventListener("pointerup", hideTooltip);
+    if (type === "fixed") {
+        const closeButton = document.createElement("button");
+        closeButton.textContent = "✕";
+        closeButton.classList.add("close-button");
+        tooltip.appendChild(closeButton);
+        closeButton.addEventListener("pointerup", hideTooltip);
+    }
 
     const item = selection.data.item;
     const parent = selection.parent
@@ -145,38 +154,34 @@ function setTooltipHTML(selection: HierarchyPointNode<ExpandedItem>) {
     }
 }
 
-function positionHoverTooltip(event: MouseEvent) {
+function positionHoverTooltip(element: SVGElement) {
     tooltip.style.position = "absolute";
 
     const tooltipRect = tooltip.getBoundingClientRect();
-    const cursorX = event.clientX + window.scrollX;
-    const cursorY = event.clientY + window.scrollY;
+    const elementRect = element.getBoundingClientRect();
 
-    const midX = window.innerWidth / 2;
-    const midY = window.innerHeight / 2;
+    console.log(tooltipRect, elementRect);
 
-    let tooltipX, tooltipY;
+    const verticalPadding = 0;
 
-    if (cursorX <= midX && cursorY <= midY) {
-        // Cursor is in the top-left quadrant
-        tooltipX = cursorX + 10;
-        tooltipY = cursorY + 10;
-    } else if (cursorX > midX && cursorY <= midY) {
-        // Cursor is in the top-right quadrant
-        tooltipX = cursorX - tooltipRect.width - 10;
-        tooltipY = cursorY + 10;
-    } else if (cursorX <= midX && cursorY > midY) {
-        // Cursor is in the bottom-left quadrant
-        tooltipX = cursorX + 10;
-        tooltipY = cursorY - tooltipRect.height - 10;
+    // Position the tooltip above the element. If there is not enough space,
+    // position it below the element.
+    const tooltipTopAbove =
+        elementRect.top + window.scrollY - tooltipRect.height - verticalPadding;
+    const tooltipTopBelow =
+        elementRect.bottom + window.scrollY + verticalPadding;
+    if (tooltipTopAbove >= window.scrollY) {
+        tooltip.style.top = tooltipTopAbove + "px";
     } else {
-        // Cursor is in the bottom-right quadrant
-        tooltipX = cursorX - tooltipRect.width - 10;
-        tooltipY = cursorY - tooltipRect.height - 10;
+        tooltip.style.top = tooltipTopBelow + "px";
     }
-
-    tooltip.style.left = tooltipX + "px";
-    tooltip.style.top = tooltipY + "px";
+    // Align the tooltip with the left side of the element. If there is not
+    // enough space, align it with the right side.
+    if (elementRect.left + tooltipRect.width < window.innerWidth) {
+        tooltip.style.left = elementRect.left + "px";
+    } else {
+        tooltip.style.left = elementRect.right - tooltipRect.width + "px";
+    }
 }
 
 function positionFixedTooltip() {
@@ -184,29 +189,32 @@ function positionFixedTooltip() {
     tooltip.style.top = "50%";
     tooltip.style.left = "50%";
     tooltip.style.transform = "translate(-50%, -50%)";
-    tooltip.style.opacity = "1";
 }
 
-function positionTooltip(event: MouseEvent, type: string) {
+function positionTooltip(element: SVGElement, type: string) {
     if (type === "hover") {
-        positionHoverTooltip(event);
+        positionHoverTooltip(element);
     } else {
         positionFixedTooltip();
     }
 }
 
 function showTooltip(
-    event: MouseEvent,
-    selection: HierarchyPointNode<ExpandedItem>,
+    node: HierarchyPointNode<ExpandedItem>,
+    element: SVGElement,
     type: string,
 ) {
-    setTooltipHTML(selection);
-    positionTooltip(event, type);
-    tooltip.style.opacity = "1";
+    hideTooltip();
+    setTooltipHTML(node, type);
+    positionTooltip(element, type);
     tooltip.style.zIndex = "9000";
+    tooltip.style.opacity = "1";
 }
 
 function hideTooltip() {
     tooltip.style.opacity = "0";
     tooltip.style.zIndex = "-9000";
+    tooltip.innerHTML = "";
+    tooltip.style.top = "0px";
+    tooltip.style.left = "0px";
 }
