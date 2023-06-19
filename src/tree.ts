@@ -98,10 +98,15 @@ function headProgenitorTreeSVG(
     } = {},
 ) {
     // https://github.com/d3/d3-hierarchy#hierarchy
-    const root = hierarchy<ExpandedItem>(data, (d: ExpandedItem) => d.children);
+    const tree = hierarchy<ExpandedItem>(data, (d: ExpandedItem) => d.children);
 
-    root.count() // counts node leaves and assigns count to .value
-        .sort((a, b) => b.height - a.height || (b.value ?? 0) - (a.value ?? 0));
+    tree.count() // counts node leaves and assigns count to .value
+        .sort(
+            (a, b) =>
+                b.height - a.height ||
+                (b.value ?? 0) - (a.value ?? 0) ||
+                +(b.data.item.term < a.data.item.term),
+        );
 
     // The below is somewhat confusing as the d3 api assumes that the tree is
     // oriented vertically, with the root at the top and the leaves at the
@@ -110,17 +115,17 @@ function headProgenitorTreeSVG(
     // correspond in our case to width and y.
 
     // root.height is the number of links between the root and the furthest leaf.
-    const dx = width / (root.height + 1);
+    const dx = width / (tree.height + 1);
     const dy = 12;
     const layout = layoutAlg<ExpandedItem>()
         .nodeSize([dy, dx])
         .separation((a, b) => (a.parent == b.parent ? 4 : 4));
-    const root_layout = layout(root);
+    const tree_layout = layout(tree);
 
     // Center the tree vertically.
     let y0 = Infinity;
     let y1 = -y0;
-    root_layout.each((d) => {
+    tree_layout.each((d) => {
         if (d.x > y1) y1 = d.x;
         if (d.x < y0) y0 = d.x;
     });
@@ -153,7 +158,7 @@ function headProgenitorTreeSVG(
         .attr("stroke-linejoin", strokeLinejoin)
         .attr("stroke-width", strokeWidth)
         .selectAll("path")
-        .data(root_layout.links())
+        .data(tree_layout.links())
         .join("path")
         .attr(
             "d",
@@ -165,7 +170,7 @@ function headProgenitorTreeSVG(
                 .y((d) => d.x),
         );
 
-    const descendants: ExpandedItemNode[] = root_layout
+    const descendants: ExpandedItemNode[] = tree_layout
         .descendants()
         .map(function (d) {
             return { node: d, bbox: new DOMRect(0, 0, 0, 0) };
