@@ -11,7 +11,12 @@ tooltip.addEventListener("pointerenter", (event) => {
         window.clearTimeout(tooltipHideTimeout);
     }
 });
-tooltip.addEventListener("pointerleave", hideTooltip);
+tooltip.addEventListener("pointerleave", (event) => {
+    if (event.pointerType === "mouse") {
+        window.clearTimeout(tooltipShowTimeout);
+        tooltipHideTimeout = window.setTimeout(hideTooltip, 100);
+    }
+});
 
 export function setNodeTooltipListeners(
     node: Selection<SVGTextElement, ExpandedItemNode, SVGGElement, undefined>,
@@ -160,8 +165,6 @@ function positionHoverTooltip(element: SVGElement) {
 
     const tooltipRect = tooltip.getBoundingClientRect();
     const elementRect = element.getBoundingClientRect();
-
-    console.log(tooltipRect, elementRect);
 
     const verticalPadding = 0;
 

@@ -121,11 +121,10 @@
 #tooltip .close-button {
     position: absolute;
     background-color: transparent;
-    top: 0;
-    right: 0;
-    width: 20px;
-    height: 20px;
+    top: 2px;
+    right: 2px;
     font-weight: bold;
+    font-size: larger;
     color: #313639;
     opacity: 50%;
     border: none;
