@@ -21,9 +21,11 @@ tooltip.addEventListener("pointerleave", (event) => {
 export function setNodeTooltipListeners(
     node: Selection<SVGTextElement, ExpandedItemNode, SVGGElement, undefined>,
 ) {
-    // for non-mouse, show tooltip on touchend
-    node.on("touchend", function (_, d) {
-        showTooltip(d.node, this, "fixed");
+    // for non-mouse, show tooltip on pointerup
+    node.on("pointerup", function (event, d) {
+        if (event.pointerType !== "mouse") {
+            showTooltip(d.node, this, "fixed");
+        }
     });
 
     // for mouse, show tooltip on hover
@@ -87,7 +89,7 @@ function setTooltipHTML(
         closeButton.textContent = "✕";
         closeButton.classList.add("close-button");
         tooltip.appendChild(closeButton);
-        closeButton.addEventListener("touchend", hideTooltip);
+        closeButton.addEventListener("pointerup", hideTooltip);
     }
 
     const item = selection.data.item;

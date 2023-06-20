@@ -151,7 +151,12 @@ function headProgenitorTreeSVG(
         .attr("vector-effect", "non-scaling-stroke")
         .attr("font-size", 12)
         .attr("text-anchor", "middle")
-        .attr("text-rendering", "optimizeLegibility");
+        .attr("text-rendering", "optimizeLegibility")
+        // this noop event listener is to cajole mobile browsers (or, at least,
+        // ios webkit) into responding to touch events on svg elements, cf.
+        // https://stackoverflow.com/a/65777666/10658294
+        // eslint-disable-next-line @typescript-eslint/no-empty-function
+        .on("touchstart", () => {});
 
     // the lines forming the tree
     svg.append("g")
