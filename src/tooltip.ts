@@ -44,6 +44,7 @@ export function setNodeTooltipListeners(
 function etyPrep(etyMode: string): string {
     switch (etyMode) {
         case "derived":
+        case "undefined derivation":
         case "inherited":
         case "borrowed":
         case "back-formation":
