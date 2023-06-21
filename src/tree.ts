@@ -10,10 +10,15 @@ import { HierarchyPointLink, HierarchyPointNode } from "d3";
 const ety = document.getElementById("ety") as HTMLDivElement;
 let treeData: ExpandedItem | null = null;
 let treeResizeTimeout: number;
+let windowWidth = window.innerWidth;
 
 function resizeTree() {
     window.clearTimeout(treeResizeTimeout);
-    treeResizeTimeout = window.setTimeout(displayHeadProgenitorTree, 500);
+    treeResizeTimeout = window.setTimeout(() => {
+        if (windowWidth === window.innerWidth) return;
+        windowWidth = window.innerWidth;
+        displayHeadProgenitorTree();
+    }, 500);
 }
 
 window.addEventListener("resize", resizeTree);
