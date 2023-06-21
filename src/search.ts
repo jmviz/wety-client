@@ -93,7 +93,6 @@ function displayLangSuggestions() {
         langSuggestionsList.classList.add("hidden");
         return;
     }
-    langSuggestionsList.classList.remove("hidden");
     langSuggestions.forEach((suggestion) => {
         const li = document.createElement("li");
         li.classList.add("suggestion-item");
@@ -105,6 +104,7 @@ function displayLangSuggestions() {
         });
         langSuggestionsList.appendChild(li);
     });
+    langSuggestionsList.classList.remove("hidden");
 }
 
 async function fetchLangSuggestions() {
@@ -164,10 +164,6 @@ langSearchInput.addEventListener("blur", () => {
     langSuggestionsList.classList.add("hidden");
 });
 
-langSearchInput.addEventListener("focus", () => {
-    langSuggestionsList.classList.remove("hidden");
-});
-
 langSuggestionsList.addEventListener("mouseover", () => {
     langSuggestionsListHovered = true;
 });
@@ -218,6 +214,7 @@ function createTermSuggestionListItem(termSuggestion: Item) {
     const listItem = document.createElement("li");
     listItem.classList.add("suggestion-item");
     listItem.addEventListener("pointerup", () => {
+        console.log("hey");
         termSearchInput.value = termSuggestion.term;
         termSelectedId = termSuggestion.id;
         termSuggestionsList.classList.add("hidden");
@@ -250,11 +247,11 @@ function displayTermSuggestions() {
         termSuggestionsList.classList.add("hidden");
         return;
     }
-    termSuggestionsList.classList.remove("hidden");
     termSuggestions.forEach((suggestion) => {
         const li = createTermSuggestionListItem(suggestion.item);
         termSuggestionsList.appendChild(li);
     });
+    termSuggestionsList.classList.remove("hidden");
 }
 
 async function fetchTermSuggestions() {
@@ -321,10 +318,6 @@ termSearchInput.addEventListener("blur", () => {
     if ((hasTouchOnly || termSuggestionsListHovered) && termSelectedId === -1)
         return;
     termSuggestionsList.classList.add("hidden");
-});
-
-termSearchInput.addEventListener("focus", () => {
-    termSuggestionsList.classList.remove("hidden");
 });
 
 termSuggestionsList.addEventListener("mouseover", () => {
