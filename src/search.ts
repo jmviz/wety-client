@@ -127,6 +127,7 @@ async function fetchLangSuggestions() {
 }
 
 langSearchInput.addEventListener("input", () => {
+    langSelectedId = -1;
     window.clearTimeout(langFetchTimeout);
     langFetchTimeout = window.setTimeout(fetchLangSuggestions, 500);
 });
@@ -280,6 +281,7 @@ async function fetchTermSuggestions() {
 }
 
 termSearchInput.addEventListener("input", () => {
+    termSelectedId = -1;
     window.clearTimeout(termFetchTimeout);
     termFetchTimeout = window.setTimeout(fetchTermSuggestions, 500);
 });

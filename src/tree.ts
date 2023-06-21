@@ -80,10 +80,6 @@ export function langColor(distance: number | null) {
     return langDistanceColors[distance];
 }
 
-// function roundToEven(num: number): number {
-//     return Math.round(num / 2) * 2;
-// }
-
 // This function is an adaption. Original copyright notice:
 //
 // Copyright 2021 Observable, Inc.
