@@ -1,6 +1,13 @@
 import { LangMatch, LangMatches, Item, ItemMatch, ItemMatches } from "./types";
 import { getHeadProgenitorTree } from "./tree";
 
+const hasTouch = "ontouchstart" in window;
+// a mouse, trackpad, stylus, etc.
+const hasFinePointer = window.matchMedia("(pointer: fine)").matches;
+// this is an attempt to deal with mobile devices that will throw up a virtual
+// keyboard for text input that we have to deal with
+const hasTouchOnly = hasTouch && !hasFinePointer;
+
 const langSearchInput = document.getElementById(
     "lang-input",
 ) as HTMLInputElement;
@@ -32,6 +39,53 @@ function getAPIAddress() {
 
 export const api = getAPIAddress();
 
+let lastLangName: string | null = null;
+let lastLangId: number | null = null;
+
+function setSelectedLang(match: LangMatch) {
+    langSelectedId = match.id;
+    window.localStorage.setItem("lastLangName", match.name);
+    window.localStorage.setItem("lastLangId", match.id.toString());
+}
+
+window.addEventListener("DOMContentLoaded", async function () {
+    lastLangName = this.localStorage.getItem("lastLangName");
+    lastLangId = parseInt(this.localStorage.getItem("lastLangId") || "");
+    if (lastLangName !== null && lastLangId !== null) {
+        langSearchInput.value = lastLangName;
+        try {
+            console.log(
+                `checking that stored last lang with name ${lastLangName} and id ${lastLangId} is still valid...`,
+            );
+            const urlLangName = encodeURIComponent(lastLangName);
+            const response = await fetch(`${api}langs/${urlLangName}`);
+            const data = (await response.json()) as LangMatches;
+            console.log(data);
+            const langMatch = data.matches[0];
+            if (
+                langMatch.name === lastLangName &&
+                langMatch.id === lastLangId
+            ) {
+                console.log("check succeeded, using stored last lang");
+                setSelectedLang(langMatch);
+                termSearchInput.focus();
+                return;
+            }
+            throw new Error("invalid stored last lang; clearing storage");
+        } catch (error) {
+            langSearchInput.value = "";
+            langSearchInput.focus();
+            console.error(error);
+            lastLangName = null;
+            lastLangId = null;
+            this.localStorage.removeItem("lastLangName");
+            this.localStorage.removeItem("lastLangId");
+            return;
+        }
+    }
+    langSearchInput.focus();
+});
+
 function displayLangSuggestions() {
     langSuggestionsList.innerHTML = "";
     langSelectedSuggestionIndex = -1;
@@ -46,7 +100,7 @@ function displayLangSuggestions() {
         li.textContent = suggestion.name;
         li.addEventListener("pointerup", () => {
             langSearchInput.value = suggestion.name;
-            langSelectedId = suggestion.id;
+            setSelectedLang(suggestion);
             langSuggestionsList.classList.add("hidden");
         });
         langSuggestionsList.appendChild(li);
@@ -54,7 +108,9 @@ function displayLangSuggestions() {
 }
 
 async function fetchLangSuggestions() {
-    const input = encodeURIComponent(langSearchInput.value.toLowerCase());
+    const input = encodeURIComponent(
+        langSearchInput.value.trim().toLowerCase(),
+    );
     if (!input) {
         langSuggestionsList.innerHTML = "";
         return;
@@ -86,12 +142,12 @@ langSearchInput.addEventListener("keydown", (event) => {
         if (langSelectedSuggestionIndex > -1) {
             langSelectedSuggestionIndex--;
         }
-    } else if (event.key === "Tab" || event.key === "Enter") {
+    } else if (event.key === "Enter") {
         if (langSelectedSuggestionIndex > -1) {
             event.preventDefault();
             const suggestion = langSuggestions[langSelectedSuggestionIndex];
             langSearchInput.value = suggestion.name;
-            langSelectedId = suggestion.id;
+            setSelectedLang(suggestion);
             langSuggestionsList.classList.add("hidden");
             langSelectedSuggestionIndex = -1;
         }
@@ -100,9 +156,11 @@ langSearchInput.addEventListener("keydown", (event) => {
 });
 
 langSearchInput.addEventListener("blur", () => {
-    if (!langSuggestionsListHovered) {
-        langSuggestionsList.classList.add("hidden");
-    }
+    // Prevent the suggestions list from being hidden when user presses "Done"
+    // on virtual keyboard, thereby unfocusing the input element.
+    if ((hasTouchOnly || langSuggestionsListHovered) && langSelectedId === -1)
+        return;
+    langSuggestionsList.classList.add("hidden");
 });
 
 langSearchInput.addEventListener("focus", () => {
@@ -203,7 +261,9 @@ async function fetchTermSuggestions() {
         termSuggestionsList.innerHTML = "";
         return;
     }
-    const input = encodeURIComponent(termSearchInput.value.toLowerCase());
+    const input = encodeURIComponent(
+        termSearchInput.value.trim().toLowerCase(),
+    );
     if (!input) {
         termSuggestionsList.innerHTML = "";
         return;
@@ -235,7 +295,7 @@ termSearchInput.addEventListener("keydown", (event) => {
         if (termSelectedSuggestionIndex > -1) {
             termSelectedSuggestionIndex--;
         }
-    } else if (event.key === "Tab" || event.key === "Enter") {
+    } else if (event.key === "Enter") {
         if (termSelectedSuggestionIndex > -1) {
             event.preventDefault();
             const suggestion = termSuggestions[termSelectedSuggestionIndex];
@@ -254,9 +314,11 @@ termSearchInput.addEventListener("keydown", (event) => {
 });
 
 termSearchInput.addEventListener("blur", () => {
-    if (!termSuggestionsListHovered) {
-        termSuggestionsList.classList.add("hidden");
-    }
+    // Prevent the suggestions list from being hidden when user presses "Done"
+    // on virtual keyboard, thereby unfocusing the input element.
+    if ((hasTouchOnly || termSuggestionsListHovered) && termSelectedId === -1)
+        return;
+    termSuggestionsList.classList.add("hidden");
 });
 
 termSearchInput.addEventListener("focus", () => {
