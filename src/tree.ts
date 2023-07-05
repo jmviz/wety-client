@@ -1,11 +1,15 @@
 import { ExpandedItem, ExpandedItemNode } from "./types";
 import { api, langSelectedId, termSelectedId } from "./search";
 import { setNodeTooltipListeners } from "./tooltip";
+import cluster from "./treeCluster";
 
 import { create, Selection } from "d3-selection";
 import { link, curveStepBefore } from "d3-shape";
-import { cluster, hierarchy } from "d3-hierarchy";
-import { HierarchyPointLink, HierarchyPointNode } from "d3";
+import {
+    hierarchy,
+    HierarchyPointLink,
+    HierarchyPointNode,
+} from "d3-hierarchy";
 
 const ety = document.getElementById("ety") as HTMLDivElement;
 let treeData: ExpandedItem | null = null;
