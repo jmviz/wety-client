@@ -214,7 +214,6 @@ function createTermSuggestionListItem(termSuggestion: Item) {
     const listItem = document.createElement("li");
     listItem.classList.add("suggestion-item");
     listItem.addEventListener("pointerup", () => {
-        console.log("hey");
         termSearchInput.value = termSuggestion.term;
         termSelectedId = termSuggestion.id;
         termSuggestionsList.classList.add("hidden");
