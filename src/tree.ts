@@ -13,19 +13,6 @@ import {
 
 const ety = document.getElementById("ety") as HTMLDivElement;
 let treeData: ExpandedItem | null = null;
-let treeResizeTimeout: number;
-let windowWidth = window.innerWidth;
-
-function resizeTree() {
-    window.clearTimeout(treeResizeTimeout);
-    treeResizeTimeout = window.setTimeout(() => {
-        if (windowWidth === window.innerWidth) return;
-        windowWidth = window.innerWidth;
-        displayHeadProgenitorTree();
-    }, 500);
-}
-
-window.addEventListener("resize", resizeTree);
 
 export async function getHeadProgenitorTree() {
     try {
@@ -44,18 +31,17 @@ function displayHeadProgenitorTree() {
     ety.innerHTML = "";
     if (treeData === null) return;
     const {
-        tree: tree,
-        node: node,
-        nodeBackground: nodeBackground,
-    } = headProgenitorTreeSVG(treeData, {
-        width: ety.clientWidth,
-    });
-    if (tree === null) return;
-    tree.setAttribute("id", "tree");
-    tree.style.opacity = "0";
-    ety.appendChild(tree);
-    addSVGTextBackgrounds(node, nodeBackground);
-    tree.style.opacity = "1";
+        svgElement: svgElement,
+        nodeSelection: nodeSelection,
+        nodeBackgroundSelection: nodeBackgroundSelection,
+    } = headProgenitorTreeSVG(treeData);
+    if (svgElement === null) return;
+    svgElement.setAttribute("id", "tree");
+    svgElement.style.opacity = "0";
+    ety.appendChild(svgElement);
+    addSVGTextBackgrounds(nodeSelection, nodeBackgroundSelection);
+    window.scrollTo(document.body.scrollWidth, 0);
+    svgElement.style.opacity = "1";
 }
 
 // https://accessiblepalette.com/?lightness=98.2,93.95,85.1,76.5,67.65,52,47.6,40.4,32.4,23.55&770039=1,12&720614=1,0&672000=1,0&493500=1,0&224000=1,0&004300=1,0&004a32=1,0&004f64=1,0&004e94=1,0&003c88=1,0&2e2d79=1,0&750039=1,0
@@ -89,28 +75,21 @@ export function langColor(distance: number | null) {
 // Copyright 2021 Observable, Inc.
 // Released under the ISC license.
 // https://observablehq.com/@d3/tree
-function headProgenitorTreeSVG(
-    data: ExpandedItem,
-    {
-        layoutAlg = cluster, // layout algorithm (typically d3.tree or d3.cluster)
-        width = 640, // outer width, in pixels
-        stroke = "#555", // stroke for links
-        strokeWidth = 1.0, // stroke width for links
-        strokeOpacity = 1.0, // stroke opacity for links
-        strokeLinejoin = "miter", // stroke line join for links
-        strokeLinecap = "butt", // stroke line cap for links
-        curveAlg = curveStepBefore, // curve for the link
-    } = {},
-) {
+function headProgenitorTreeSVG(data: ExpandedItem) {
     // https://github.com/d3/d3-hierarchy#hierarchy
-    const tree = hierarchy<ExpandedItem>(data, (d: ExpandedItem) => d.children);
+    const root = hierarchy<ExpandedItem>(data, (d: ExpandedItem) => d.children);
 
-    tree.count() // counts node leaves and assigns count to .value
+    const searched = root.find((d) => d.data.item.id === termSelectedId);
+    const searchedAncestors = searched?.ancestors() ?? [];
+
+    root.count() // counts node leaves and assigns count to .value
         .sort(
             (a, b) =>
-                b.height - a.height ||
-                (b.value ?? 0) - (a.value ?? 0) ||
-                +(b.data.item.term < a.data.item.term),
+                +searchedAncestors.includes(a) -
+                    +searchedAncestors.includes(b) ||
+                a.height - b.height ||
+                (a.value ?? 0) - (b.value ?? 0) ||
+                +(a.data.item.term < b.data.item.term) * 2 - 1,
         );
 
     // The below is somewhat confusing as the d3 api assumes that the tree is
@@ -120,21 +99,23 @@ function headProgenitorTreeSVG(
     // correspond in our case to width and y.
 
     // root.height is the number of links between the root and the furthest leaf.
-    const dx = width / (tree.height + 1);
+    // const dx = width / (root.height + 1);
+    const dx = 150;
     const dy = 12;
-    const layout = layoutAlg<ExpandedItem>()
+    const layout = cluster<ExpandedItem>()
         .nodeSize([dy, dx])
         .separation((a, b) => (a.parent == b.parent ? 4 : 4));
-    const tree_layout = layout(tree);
+    const pointRoot = layout(root);
 
     // Center the tree vertically.
     let y0 = Infinity;
     let y1 = -y0;
-    tree_layout.each((d) => {
+    pointRoot.each((d) => {
         if (d.x > y1) y1 = d.x;
         if (d.x < y0) y0 = d.x;
     });
 
+    const width = (root.height + 1) * dx;
     const height = y1 - y0 + dy * 4;
 
     const viewBox = [-dx / 2, y0 - dy * 2, width, height];
@@ -151,7 +132,10 @@ function headProgenitorTreeSVG(
         .attr("viewBox", viewBox)
         .attr("width", width)
         .attr("height", height)
-        .attr("style", "max-width: 100%; height: auto; height: intrinsic;")
+        .attr(
+            "style",
+            `min-width: ${width}, max-width: ${width}; height: auto; height: intrinsic;`,
+        )
         .attr("shape-rendering", "crispEdges")
         .attr("vector-effect", "non-scaling-stroke")
         .attr("font-size", 12)
@@ -166,25 +150,25 @@ function headProgenitorTreeSVG(
     // the lines forming the tree
     svg.append("g")
         .attr("fill", "none")
-        .attr("stroke", stroke)
-        .attr("stroke-opacity", strokeOpacity)
-        .attr("stroke-linecap", strokeLinecap)
-        .attr("stroke-linejoin", strokeLinejoin)
-        .attr("stroke-width", strokeWidth)
+        .attr("stroke", "#555")
+        .attr("stroke-opacity", 1.0)
+        .attr("stroke-linecap", "butt")
+        .attr("stroke-linejoin", "miter")
+        .attr("stroke-width", 1.0)
         .selectAll("path")
-        .data(tree_layout.links())
+        .data(pointRoot.links())
         .join("path")
         .attr(
             "d",
             link<
                 HierarchyPointLink<ExpandedItem>,
                 HierarchyPointNode<ExpandedItem>
-            >(curveAlg)
+            >(curveStepBefore)
                 .x((d) => d.y)
                 .y((d) => d.x),
         );
 
-    const descendants: ExpandedItemNode[] = tree_layout
+    const descendants: ExpandedItemNode[] = pointRoot
         .descendants()
         .map(function (d) {
             return { node: d, bbox: new DOMRect(0, 0, 0, 0) };
@@ -234,7 +218,11 @@ function headProgenitorTreeSVG(
 
     setNodeTooltipListeners(node);
 
-    return { tree: svg.node(), node: node, nodeBackground: nodeBackground };
+    return {
+        svgElement: svg.node(),
+        nodeSelection: node,
+        nodeBackgroundSelection: nodeBackground,
+    };
 }
 
 function addSVGTextBackgrounds(
