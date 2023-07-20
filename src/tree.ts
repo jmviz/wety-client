@@ -98,9 +98,7 @@ function headProgenitorTreeSVG(data: ExpandedItem) {
     // the leaves on the right. So d3 terms like e.g. `root.height` and `d.x`
     // correspond in our case to width and y.
 
-    // root.height is the number of links between the root and the furthest leaf.
-    // const dx = width / (root.height + 1);
-    const dx = 150;
+    const dx = 125;
     const dy = 12;
     const layout = cluster<ExpandedItem>()
         .nodeSize([dy, dx])
@@ -115,6 +113,7 @@ function headProgenitorTreeSVG(data: ExpandedItem) {
         if (d.x < y0) y0 = d.x;
     });
 
+    // root.height is the number of links between the root and the furthest leaf.
     const width = (root.height + 1) * dx;
     const height = y1 - y0 + dy * 4;
 
@@ -134,11 +133,11 @@ function headProgenitorTreeSVG(data: ExpandedItem) {
         .attr("height", height)
         .attr(
             "style",
-            `min-width: ${width}, max-width: ${width}; height: auto; height: intrinsic;`,
+            `min-width: ${width}px; max-width: ${width}px; height: auto; height: intrinsic;`,
         )
         .attr("shape-rendering", "crispEdges")
         .attr("vector-effect", "non-scaling-stroke")
-        .attr("font-size", 12)
+        .attr("font-size", "small")
         .attr("text-anchor", "middle")
         .attr("text-rendering", "optimizeLegibility")
         // this noop event listener is to cajole mobile browsers (or, at least,

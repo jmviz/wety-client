@@ -1,5 +1,5 @@
 body {
-    overflow: auto;
+    overflow-x: scroll;
 }
 
 #search {
@@ -125,7 +125,19 @@ body {
 
 #ety {
     display: flex;
-    justify-content: center;
+    flex-direction: column;
+}
+
+#tree {
+    margin: auto;
+}
+
+#tree .lang {
+    font-size: smaller;
+}
+
+#tree .romanization {
+    font-size: smaller;
 }
 
 #tooltip {
