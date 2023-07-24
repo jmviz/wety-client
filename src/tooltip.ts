@@ -19,7 +19,12 @@ tooltip.addEventListener("pointerleave", (event) => {
 });
 
 export function setNodeTooltipListeners(
-    node: Selection<SVGTextElement, ExpandedItemNode, SVGGElement, undefined>,
+    node: Selection<
+        SVGGElement | SVGTextElement,
+        ExpandedItemNode,
+        SVGGElement,
+        undefined
+    >,
 ) {
     // for non-mouse, show tooltip on pointerup
     node.on("pointerup", function (event, d) {
@@ -140,7 +145,8 @@ function setTooltipHTML(
     }
 
     if (item.etyMode && parent) {
-        const ety = document.createElement("p");
+        const ety = document.createElement("div");
+        ety.classList.add("ety-line");
         const prep = etyPrep(item.etyMode);
         const color = langColor(parent.langDistance);
         ety.innerHTML = `<span class="ety-mode">${item.etyMode}</span> <span class="ety-prep">${prep}</span> <span class="parent-lang" style="color: ${color};">${parent.lang}</span> <span class="parent-term">${parent.term}</span>`;
@@ -166,25 +172,22 @@ function positionHoverTooltip(element: SVGElement) {
     const tooltipRect = tooltip.getBoundingClientRect();
     const elementRect = element.getBoundingClientRect();
 
-    const verticalPadding = 0;
-
     // Position the tooltip above the element. If there is not enough space,
     // position it below the element.
-    const tooltipTopAbove =
-        elementRect.top + window.scrollY - tooltipRect.height - verticalPadding;
-    const tooltipTopBelow =
-        elementRect.bottom + window.scrollY + verticalPadding;
-    if (tooltipTopAbove >= window.scrollY) {
-        tooltip.style.top = tooltipTopAbove + "px";
+    if (elementRect.top >= tooltipRect.height) {
+        tooltip.style.top =
+            elementRect.top + window.scrollY - tooltipRect.height + "px";
     } else {
-        tooltip.style.top = tooltipTopBelow + "px";
+        tooltip.style.top = elementRect.bottom + window.scrollY + "px";
     }
+
     // Align the tooltip with the left side of the element. If there is not
     // enough space, align it with the right side.
-    if (elementRect.left + tooltipRect.width < window.innerWidth) {
-        tooltip.style.left = elementRect.left + "px";
+    if (elementRect.left <= tooltipRect.width) {
+        tooltip.style.left = elementRect.left + window.scrollX + "px";
     } else {
-        tooltip.style.left = elementRect.right - tooltipRect.width + "px";
+        tooltip.style.left =
+            elementRect.right + window.scrollX - tooltipRect.width + "px";
     }
 }
 

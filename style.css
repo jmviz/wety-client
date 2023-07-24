@@ -126,6 +126,7 @@ body {
 #ety {
     display: flex;
     flex-direction: column;
+    font-size: small;
 }
 
 #tree {
@@ -143,7 +144,7 @@ body {
 #tooltip {
     opacity: 0;
     z-index: -9000;
-    /* transition: opacity 0.05s ease; */
+    width: max-content;
     max-width: 500px;
     text-align: left;
     padding: 0rem 0.5rem;
@@ -151,7 +152,6 @@ body {
     color: #313639;
     border: 1px solid #313639;
     border-radius: 5px;
-    /* font-size: 1.3rem; */
 }
 
 #tooltip .close-button {

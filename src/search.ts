@@ -55,7 +55,7 @@ window.addEventListener("DOMContentLoaded", async function () {
         langSearchInput.value = lastLangName;
         try {
             console.log(
-                `checking that stored last lang with name ${lastLangName} and id ${lastLangId} is still valid...`,
+                `Checking that stored last lang with name ${lastLangName} and id ${lastLangId} is still valid...`,
             );
             const urlLangName = encodeURIComponent(lastLangName);
             const response = await fetch(`${api}langs/${urlLangName}`);
@@ -66,16 +66,18 @@ window.addEventListener("DOMContentLoaded", async function () {
                 langMatch.name === lastLangName &&
                 langMatch.id === lastLangId
             ) {
-                console.log("check succeeded, using stored last lang");
+                console.log("Check succeeded, using stored last lang.");
                 setSelectedLang(langMatch);
                 termSearchInput.focus();
                 return;
             }
-            throw new Error("invalid stored last lang; clearing storage");
+            throw new Error("invalid stored last lang");
         } catch (error) {
             langSearchInput.value = "";
             langSearchInput.focus();
-            console.error(error);
+            console.log(
+                "Check failed, clearing stored last lang. Probably the data was updated since your last visit.",
+            );
             lastLangName = null;
             lastLangId = null;
             this.localStorage.removeItem("lastLangName");

@@ -70,11 +70,14 @@ export function langColor(distance: number | null) {
     return langDistanceColors[distance];
 }
 
-// This function is an adaption. Original copyright notice:
+// The basic skeleton of this function is adapted from:
+//
+// https://observablehq.com/@d3/tree
+//
+// which has the following copyright and license notice:
 //
 // Copyright 2021 Observable, Inc.
 // Released under the ISC license.
-// https://observablehq.com/@d3/tree
 function headProgenitorTreeSVG(data: ExpandedItem) {
     // https://github.com/d3/d3-hierarchy#hierarchy
     const root = hierarchy<ExpandedItem>(data, (d: ExpandedItem) => d.children);
@@ -92,17 +95,26 @@ function headProgenitorTreeSVG(data: ExpandedItem) {
                 +(a.data.item.term < b.data.item.term) * 2 - 1,
         );
 
-    // The below is somewhat confusing as the d3 api assumes that the tree is
-    // oriented vertically, with the root at the top and the leaves at the
-    // bottom. But we are using a horizontal tree, with the root on the left and
-    // the leaves on the right. So d3 terms like e.g. `root.height` and `d.x`
-    // correspond in our case to width and y.
+    // This assumes the font-size of the ety div is set to "small", as it should
+    // be in the stylesheet.
+    const small_font_px = parseFloat(window.getComputedStyle(ety).fontSize);
 
-    const dx = 125;
-    const dy = 12;
+    // There is a confusion between "x" and "y" concepts in the below. The d3
+    // api assumes that the tree is oriented vertically, with the root at the
+    // top and the leaves at the bottom. But we are using a horizontal tree,
+    // with the root on the left and the leaves on the right. So variables
+    // defined by d3 like e.g. `root.height` and `d.x` correspond in our case to
+    // width and y.
+
+    // const dx = 125;
+    // const dy = 12;
+    // const sep = 4;
+    const dx = 10 * small_font_px;
+    const dy = small_font_px;
+    const sep = Math.floor(0.25 * small_font_px);
     const layout = cluster<ExpandedItem>()
         .nodeSize([dy, dx])
-        .separation((a, b) => (a.parent == b.parent ? 4 : 4));
+        .separation((a, b) => (a.parent == b.parent ? sep : sep));
     const pointRoot = layout(root);
 
     // Center the tree vertically.
@@ -137,7 +149,6 @@ function headProgenitorTreeSVG(data: ExpandedItem) {
         )
         .attr("shape-rendering", "crispEdges")
         .attr("vector-effect", "non-scaling-stroke")
-        .attr("font-size", "small")
         .attr("text-anchor", "middle")
         .attr("text-rendering", "optimizeLegibility")
         // this noop event listener is to cajole mobile browsers (or, at least,
@@ -184,31 +195,28 @@ function headProgenitorTreeSVG(data: ExpandedItem) {
     // the text nodes
     const node = svg
         .append("g")
-        .selectAll<SVGTextElement, unknown>("text")
+        .selectAll<SVGTextElement, unknown>("g")
         .data(descendants)
-        .join("text")
+        .join("g")
         .attr("font-weight", (d) =>
             d.node.data.item.id == termSelectedId ? "bold" : null,
         )
         .attr("transform", (d) => `translate(${d.node.y},${d.node.x})`);
 
-    node.append("tspan")
+    node.append("text")
         .attr("class", "lang")
-        .attr("x", 0)
-        .attr("dy", "-0.92em")
+        .attr("y", "-1em")
         .attr("fill", (d) => langColor(d.node.data.langDistance))
         .text((d) => d.node.data.item.lang);
 
-    node.append("tspan")
+    node.append("text")
         .attr("class", "term")
-        .attr("x", 0)
-        .attr("dy", "1.2em")
+        .attr("y", "0.25em")
         .text((d) => d.node.data.item.term);
 
-    node.append("tspan")
+    node.append("text")
         .attr("class", "romanization")
-        .attr("x", 0)
-        .attr("dy", "1.3em")
+        .attr("y", "1.5em")
         .text((d) =>
             d.node.data.item.romanization
                 ? `(${d.node.data.item.romanization})`
@@ -225,7 +233,12 @@ function headProgenitorTreeSVG(data: ExpandedItem) {
 }
 
 function addSVGTextBackgrounds(
-    node: Selection<SVGTextElement, ExpandedItemNode, SVGGElement, undefined>,
+    node: Selection<
+        SVGGElement | SVGTextElement,
+        ExpandedItemNode,
+        SVGGElement,
+        undefined
+    >,
     nodeBackground: Selection<
         SVGRectElement,
         ExpandedItemNode,
