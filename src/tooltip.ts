@@ -183,7 +183,7 @@ function positionHoverTooltip(element: SVGElement) {
 
     // Align the tooltip with the left side of the element. If there is not
     // enough space, align it with the right side.
-    if (elementRect.left <= tooltipRect.width) {
+    if (elementRect.left + tooltipRect.width <= window.innerWidth) {
         tooltip.style.left = elementRect.left + window.scrollX + "px";
     } else {
         tooltip.style.left =
