@@ -17,7 +17,7 @@ let treeData: ExpandedItem | null = null;
 export async function getHeadProgenitorTree() {
     try {
         const response = await fetch(
-            `${api}headProgenitorTree/${termSelectedId}/filter/${langSelectedId}`,
+            `${api}headProgenitorTree/${termSelectedId}?lang=${langSelectedId}`,
         );
         treeData = await response.json();
         console.log(treeData);
