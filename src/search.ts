@@ -95,7 +95,8 @@ function displayLangSuggestions() {
         langSuggestionsList.classList.add("hidden");
         return;
     }
-    langSuggestions.forEach((suggestion) => {
+    for (let i = 0; i < langSuggestions.length; i++) {
+        const suggestion = langSuggestions[i];
         const li = document.createElement("li");
         li.classList.add("suggestion-item");
         li.textContent = suggestion.name;
@@ -103,9 +104,13 @@ function displayLangSuggestions() {
             langSearchInput.value = suggestion.name;
             setSelectedLang(suggestion);
             langSuggestionsList.classList.add("hidden");
+            termSearchInput.focus();
+        });
+        li.addEventListener("pointerover", function () {
+            updateSelectedLangSuggestion("hover", i);
         });
         langSuggestionsList.appendChild(li);
-    });
+    }
     langSuggestionsList.classList.remove("hidden");
 }
 
@@ -135,15 +140,21 @@ langSearchInput.addEventListener("input", () => {
 });
 
 langSearchInput.addEventListener("keydown", (event) => {
+    if (langSuggestions.length === 0) return;
+    let newIndex = -1;
     if (event.key === "ArrowDown") {
         event.preventDefault();
         if (langSelectedSuggestionIndex < langSuggestions.length - 1) {
-            langSelectedSuggestionIndex++;
+            newIndex = langSelectedSuggestionIndex + 1;
+        } else {
+            newIndex = 0;
         }
     } else if (event.key === "ArrowUp") {
         event.preventDefault();
-        if (langSelectedSuggestionIndex > -1) {
-            langSelectedSuggestionIndex--;
+        if (langSelectedSuggestionIndex > 0) {
+            newIndex = langSelectedSuggestionIndex - 1;
+        } else {
+            newIndex = langSuggestions.length - 1;
         }
     } else if (event.key === "Enter") {
         if (langSelectedSuggestionIndex > -1) {
@@ -152,10 +163,10 @@ langSearchInput.addEventListener("keydown", (event) => {
             langSearchInput.value = suggestion.name;
             setSelectedLang(suggestion);
             langSuggestionsList.classList.add("hidden");
-            langSelectedSuggestionIndex = -1;
+            termSearchInput.focus();
         }
     }
-    updateSelectedLangSuggestion();
+    updateSelectedLangSuggestion("key", newIndex);
 });
 
 langSearchInput.addEventListener("blur", () => {
@@ -174,24 +185,23 @@ langSuggestionsList.addEventListener("mouseout", () => {
     langSuggestionsListHovered = false;
 });
 
-function updateSelectedLangSuggestion() {
+function updateSelectedLangSuggestion(inputType: string, newIndex = -1) {
     const suggestionElements = langSuggestionsList.getElementsByTagName("li");
-    for (let i = 0; i < suggestionElements.length; i++) {
-        const suggestionElement = suggestionElements[i];
-        if (i === langSelectedSuggestionIndex) {
-            suggestionElement.classList.add("selected");
-            const elementRect = suggestionElement.getBoundingClientRect();
-            const containerRect = langSuggestionsList.getBoundingClientRect();
-            if (elementRect.bottom > containerRect.bottom) {
-                langSuggestionsList.scrollTop +=
-                    elementRect.bottom - containerRect.bottom;
-            } else if (elementRect.top < containerRect.top) {
-                langSuggestionsList.scrollTop -=
-                    containerRect.top - elementRect.top;
-            }
-        } else {
-            suggestionElement.classList.remove("selected");
-        }
+    const oldSuggestion = suggestionElements[langSelectedSuggestionIndex];
+    oldSuggestion?.classList.remove("highlighted");
+    langSelectedSuggestionIndex = newIndex;
+    const newSuggestion = suggestionElements[langSelectedSuggestionIndex];
+    newSuggestion?.classList.add("highlighted");
+
+    if (inputType === "hover" || langSelectedSuggestionIndex === -1) return;
+
+    const elementRect = newSuggestion.getBoundingClientRect();
+    const containerRect = langSuggestionsList.getBoundingClientRect();
+    if (elementRect.bottom > containerRect.bottom) {
+        langSuggestionsList.scrollTop +=
+            elementRect.bottom - containerRect.bottom;
+    } else if (elementRect.top < containerRect.top) {
+        langSuggestionsList.scrollTop -= containerRect.top - elementRect.top;
     }
 }
 
@@ -212,7 +222,7 @@ export let termSelectedId = -1;
 let termFetchTimeout: number;
 let treeFetchTimeout: number;
 
-function createTermSuggestionListItem(termSuggestion: Item) {
+function createTermSuggestionListItem(termSuggestion: Item, index: number) {
     const listItem = document.createElement("li");
     listItem.classList.add("suggestion-item");
     listItem.addEventListener("pointerup", () => {
@@ -223,6 +233,9 @@ function createTermSuggestionListItem(termSuggestion: Item) {
             window.clearTimeout(treeFetchTimeout);
             treeFetchTimeout = window.setTimeout(getHeadProgenitorTree, 0);
         }
+    });
+    listItem.addEventListener("pointerover", function () {
+        updateSelectedTermSuggestion("hover", index);
     });
     const termLine = document.createElement("div");
     termLine.classList.add("term-line");
@@ -248,10 +261,11 @@ function displayTermSuggestions() {
         termSuggestionsList.classList.add("hidden");
         return;
     }
-    termSuggestions.forEach((suggestion) => {
-        const li = createTermSuggestionListItem(suggestion.item);
+    for (let i = 0; i < termSuggestions.length; i++) {
+        const suggestion = termSuggestions[i];
+        const li = createTermSuggestionListItem(suggestion.item, i);
         termSuggestionsList.appendChild(li);
-    });
+    }
     termSuggestionsList.classList.remove("hidden");
 }
 
@@ -285,15 +299,21 @@ termSearchInput.addEventListener("input", () => {
 });
 
 termSearchInput.addEventListener("keydown", (event) => {
+    if (termSuggestions.length === 0) return;
+    let newIndex = -1;
     if (event.key === "ArrowDown") {
         event.preventDefault();
         if (termSelectedSuggestionIndex < termSuggestions.length - 1) {
-            termSelectedSuggestionIndex++;
+            newIndex = termSelectedSuggestionIndex + 1;
+        } else {
+            newIndex = 0;
         }
     } else if (event.key === "ArrowUp") {
         event.preventDefault();
-        if (termSelectedSuggestionIndex > -1) {
-            termSelectedSuggestionIndex--;
+        if (termSelectedSuggestionIndex > 0) {
+            newIndex = termSelectedSuggestionIndex - 1;
+        } else {
+            newIndex = termSuggestions.length - 1;
         }
     } else if (event.key === "Enter") {
         if (termSelectedSuggestionIndex > -1) {
@@ -306,11 +326,9 @@ termSearchInput.addEventListener("keydown", (event) => {
                 window.clearTimeout(treeFetchTimeout);
                 treeFetchTimeout = window.setTimeout(getHeadProgenitorTree, 0);
             }
-            termSelectedSuggestionIndex = -1;
         }
     }
-
-    updateSelectedTermSuggestion();
+    updateSelectedTermSuggestion("key", newIndex);
 });
 
 termSearchInput.addEventListener("blur", () => {
@@ -329,23 +347,20 @@ termSuggestionsList.addEventListener("mouseout", () => {
     termSuggestionsListHovered = false;
 });
 
-function updateSelectedTermSuggestion() {
+function updateSelectedTermSuggestion(inputType: string, newIndex = -1) {
     const suggestionElements = termSuggestionsList.getElementsByTagName("li");
-    for (let i = 0; i < suggestionElements.length; i++) {
-        const suggestionElement = suggestionElements[i];
-        if (i === termSelectedSuggestionIndex) {
-            suggestionElement.classList.add("selected");
-            const elementRect = suggestionElement.getBoundingClientRect();
-            const containerRect = termSuggestionsList.getBoundingClientRect();
-            if (elementRect.bottom > containerRect.bottom) {
-                termSuggestionsList.scrollTop +=
-                    elementRect.bottom - containerRect.bottom;
-            } else if (elementRect.top < containerRect.top) {
-                termSuggestionsList.scrollTop -=
-                    containerRect.top - elementRect.top;
-            }
-        } else {
-            suggestionElement.classList.remove("selected");
-        }
+    const oldSuggestion = suggestionElements[termSelectedSuggestionIndex];
+    oldSuggestion?.classList.remove("highlighted");
+    termSelectedSuggestionIndex = newIndex;
+    const newSuggestion = suggestionElements[termSelectedSuggestionIndex];
+    newSuggestion?.classList.add("highlighted");
+    if (inputType === "hover" || termSelectedSuggestionIndex === -1) return;
+    const elementRect = newSuggestion.getBoundingClientRect();
+    const containerRect = termSuggestionsList.getBoundingClientRect();
+    if (elementRect.bottom > containerRect.bottom) {
+        termSuggestionsList.scrollTop +=
+            elementRect.bottom - containerRect.bottom;
+    } else if (elementRect.top < containerRect.top) {
+        termSuggestionsList.scrollTop -= containerRect.top - elementRect.top;
     }
 }

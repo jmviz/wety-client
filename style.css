@@ -22,8 +22,7 @@ body {
     cursor: pointer;
 }
 
-.suggestion-item:hover,
-.suggestion-item.selected {
+.suggestion-item.highlighted {
     background-color: #ddd;
 }
 
