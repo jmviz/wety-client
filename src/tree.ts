@@ -1,5 +1,6 @@
-import { ExpandedItem, ExpandedItemNode } from "./types";
-import { api, langSelectedId, termSelectedId } from "./search";
+import { API_BASE_URL } from "./api";
+import { ExpandedItem } from "./item";
+import { LANG_SEARCH, ITEM_SEARCH } from "./search";
 import { setNodeTooltipListeners } from "./tooltip";
 import cluster from "./treeCluster";
 
@@ -11,13 +12,20 @@ import {
     HierarchyPointNode,
 } from "d3-hierarchy";
 
+export interface ExpandedItemNode {
+    node: HierarchyPointNode<ExpandedItem>;
+    bbox: SVGRect;
+}
+
 const ety = document.getElementById("ety") as HTMLDivElement;
 let treeData: ExpandedItem | null = null;
 
 export async function getHeadProgenitorTree() {
     try {
+        const lang = LANG_SEARCH.selectedId;
+        const item = ITEM_SEARCH.selectedId;
         const response = await fetch(
-            `${api}headProgenitorTree/${termSelectedId}?lang=${langSelectedId}`,
+            `${API_BASE_URL}headProgenitorTree/${item}?lang=${lang}`,
         );
         treeData = await response.json();
         console.log(treeData);
@@ -82,7 +90,9 @@ function headProgenitorTreeSVG(data: ExpandedItem) {
     // https://github.com/d3/d3-hierarchy#hierarchy
     const root = hierarchy<ExpandedItem>(data, (d: ExpandedItem) => d.children);
 
-    const searched = root.find((d) => d.data.item.id === termSelectedId);
+    const searched = root.find(
+        (d) => d.data.item.id === ITEM_SEARCH.selectedId,
+    );
     const searchedAncestors = searched?.ancestors() ?? [];
 
     root.count() // counts node leaves and assigns count to .value
@@ -199,7 +209,7 @@ function headProgenitorTreeSVG(data: ExpandedItem) {
         .data(descendants)
         .join("g")
         .attr("font-weight", (d) =>
-            d.node.data.item.id == termSelectedId ? "bold" : null,
+            d.node.data.item.id == ITEM_SEARCH.selectedId ? "bold" : null,
         )
         .attr("transform", (d) => `translate(${d.node.y},${d.node.x})`);
 

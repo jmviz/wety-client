@@ -1,366 +1,440 @@
-import { LangMatch, LangMatches, Item, ItemMatch, ItemMatches } from "./types";
+import { API_BASE_URL } from "./api";
+import { Item } from "./item";
 import { getHeadProgenitorTree } from "./tree";
 
-const hasTouch = "ontouchstart" in window;
-// a mouse, trackpad, stylus, etc.
-const hasFinePointer = window.matchMedia("(pointer: fine)").matches;
-// this is an attempt to deal with mobile devices that will throw up a virtual
-// keyboard for text input that we have to deal with
-const hasTouchOnly = hasTouch && !hasFinePointer;
+////////////////////////
+// Base Search Class
+////////////////////////
 
-const langSearchInput = document.getElementById(
-    "lang-input",
-) as HTMLInputElement;
-const langSuggestionsList = document.getElementById(
-    "lang-suggestions",
-) as HTMLUListElement;
-let langSuggestions: LangMatch[] = [];
-let langSelectedSuggestionIndex = -1;
-let langSuggestionsListHovered = false;
-export let langSelectedId = -1;
-let langFetchTimeout: number;
+class Input {
+    element: HTMLInputElement;
 
-function getAPIAddress() {
-    switch (window.location.hostname) {
-        case "www.wety.org":
-        case "wety.org":
-            return "https://api.wety.org/";
-        default:
-            // to test only on the machine running this client server, uncomment
-            // this line and comment the line below it:
-            // return "http://127.0.0.1:3000/";
+    constructor(elementId: string) {
+        this.element = document.getElementById(elementId) as HTMLInputElement;
+    }
 
-            // to test on other devices on your network, comment the above line
-            // and replace the below line with the local IP address for the
-            // machine running this client server, e.g.:
-            return "http://192.168.0.88:3000/";
+    getQueryValue(): string {
+        return encodeURIComponent(this.element.value.trim().toLowerCase());
     }
 }
 
-export const api = getAPIAddress();
-
-let lastLangName: string | null = null;
-let lastLangId: number | null = null;
-
-function setSelectedLang(match: LangMatch) {
-    langSelectedId = match.id;
-    window.localStorage.setItem("lastLangName", match.name);
-    window.localStorage.setItem("lastLangId", match.id.toString());
+interface Suggestion {
+    getId(): number;
+    createListElement(): HTMLLIElement;
+    inputValue(): string;
 }
 
-window.addEventListener("DOMContentLoaded", async function () {
-    lastLangName = this.localStorage.getItem("lastLangName");
-    lastLangId = parseInt(this.localStorage.getItem("lastLangId") || "");
-    if (lastLangName !== null && lastLangId !== null) {
-        langSearchInput.value = lastLangName;
+class SuggestionsList {
+    data: Suggestion[];
+    element: HTMLUListElement;
+    elementHovered: boolean;
+    items: HTMLLIElement[];
+    activeItemIndex: number | null;
+
+    constructor(elementId: string) {
+        this.data = [];
+        this.element = document.getElementById(elementId) as HTMLUListElement;
+        this.elementHovered = false;
+        this.items = [];
+        this.activeItemIndex = null;
+
+        this.element.addEventListener("pointerover", () => {
+            this.elementHovered = true;
+        });
+        this.element.addEventListener("pointerout", () => {
+            this.elementHovered = false;
+        });
+    }
+
+    addItem(li: HTMLLIElement) {
+        this.element.appendChild(li);
+        this.items.push(li);
+    }
+
+    hide() {
+        this.element.classList.add("hidden");
+    }
+
+    show() {
+        this.element.classList.remove("hidden");
+    }
+
+    clear() {
+        this.element.innerHTML = "";
+        this.hide();
+        this.items = [];
+        this.activeItemIndex = null;
+    }
+
+    updateActiveItem(newIndex: number | null) {
+        const oldActive =
+            this.activeItemIndex !== null
+                ? this.items[this.activeItemIndex]
+                : null;
+        oldActive?.classList.remove("highlighted");
+        this.activeItemIndex = newIndex;
+        const newActive =
+            this.activeItemIndex !== null
+                ? this.items[this.activeItemIndex]
+                : null;
+        newActive?.classList.add("highlighted");
+    }
+
+    adjustScroll() {
+        const active =
+            this.activeItemIndex !== null
+                ? this.items[this.activeItemIndex]
+                : null;
+        if (active === null) return;
+
+        const activeRect = active.getBoundingClientRect();
+        const listRect = this.element.getBoundingClientRect();
+        if (activeRect.bottom > listRect.bottom) {
+            this.element.scrollTop += activeRect.bottom - listRect.bottom;
+        } else if (activeRect.top < listRect.top) {
+            this.element.scrollTop -= listRect.top - activeRect.top;
+        }
+    }
+}
+
+interface ApiEndpoint {
+    timeout: number | undefined;
+    timeoutDuration: number;
+    fetch(query: string): Promise<Suggestion[]>;
+}
+
+class Search {
+    input: Input;
+    nextFocus: HTMLElement | null;
+    suggestionsList: SuggestionsList;
+    apiEndpoint: ApiEndpoint;
+    selectedId: number | null = null;
+
+    constructor(config: {
+        input: Input;
+        suggestionsList: SuggestionsList;
+        apiEndpoint: ApiEndpoint;
+        nextFocus: HTMLElement | null;
+    }) {
+        this.input = config.input;
+        this.suggestionsList = config.suggestionsList;
+        this.apiEndpoint = config.apiEndpoint;
+        this.nextFocus = config.nextFocus;
+
+        this.input.element.addEventListener("input", () => this.handleInput());
+        this.input.element.addEventListener("keydown", (event) =>
+            this.handleKeydown(event),
+        );
+        this.input.element.addEventListener("blur", () => this.handleBlur());
+    }
+
+    handleInput() {
+        this.selectedId = null;
+        window.clearTimeout(this.apiEndpoint.timeout);
+        this.apiEndpoint.timeout = window.setTimeout(
+            () => this.fetchSuggestions(),
+            this.apiEndpoint.timeoutDuration,
+        );
+    }
+
+    handleKeydown(event: KeyboardEvent) {
+        if (this.suggestionsList.data.length === 0) return;
+
+        const lastIndex = this.suggestionsList.data.length - 1;
+        const activeIndex = this.suggestionsList.activeItemIndex;
+        let newActiveIndex: number | null = null;
+
+        switch (event.key) {
+            case "Escape":
+                this.suggestionsList.hide();
+                break;
+            case "ArrowDown":
+                event.preventDefault();
+                if (activeIndex === null || activeIndex >= lastIndex) {
+                    newActiveIndex = 0;
+                } else {
+                    newActiveIndex = activeIndex + 1;
+                }
+                break;
+            case "ArrowUp":
+                event.preventDefault();
+                if (activeIndex === null || activeIndex <= 0) {
+                    newActiveIndex = lastIndex;
+                } else {
+                    newActiveIndex = activeIndex - 1;
+                }
+                break;
+            case "Enter":
+                if (
+                    activeIndex !== null &&
+                    this.suggestionsList.data[activeIndex]
+                ) {
+                    this.setSelected(this.suggestionsList.data[activeIndex]);
+                }
+                break;
+        }
+
+        this.suggestionsList.updateActiveItem(newActiveIndex);
+        this.suggestionsList.adjustScroll();
+    }
+
+    handleBlur() {
+        // Prevent the suggestions list from being hidden when user presses
+        // "Done" on virtual keyboard, thereby unfocusing the input element.
+        const hasTouch = "ontouchstart" in window;
+        const hasFinePointer = window.matchMedia("(pointer: fine)").matches;
+        const hasTouchOnly = hasTouch && !hasFinePointer;
+
+        if (
+            (hasTouchOnly || this.suggestionsList.elementHovered) &&
+            this.selectedId === null
+        ) {
+            return;
+        }
+        this.suggestionsList.hide();
+    }
+
+    async fetchSuggestions() {
+        const query = this.input.getQueryValue();
+        if (!query) {
+            this.suggestionsList.clear();
+            return;
+        }
+        try {
+            const data = await this.apiEndpoint.fetch(query);
+            console.log(data);
+            this.suggestionsList.data = data;
+            this.displaySuggestions();
+        } catch (error) {
+            console.error(error);
+        }
+    }
+
+    displaySuggestions() {
+        this.suggestionsList.clear();
+        if (this.suggestionsList.data.length === 0) return;
+        for (let i = 0; i < this.suggestionsList.data.length; i++) {
+            const suggestion = this.suggestionsList.data[i];
+            const li = suggestion.createListElement();
+            li.classList.add("suggestion-item");
+            li.addEventListener("pointerup", () => {
+                this.setSelected(suggestion);
+            });
+            li.addEventListener("pointerover", () => {
+                this.suggestionsList.updateActiveItem(i);
+            });
+            this.suggestionsList.addItem(li);
+        }
+        this.suggestionsList.show();
+    }
+
+    setSelected(suggestion: Suggestion) {
+        this.input.element.value = suggestion.inputValue();
+        this.selectedId = suggestion.getId();
+        this.suggestionsList.hide();
+        this.nextFocus?.focus();
+    }
+}
+
+////////////////////////
+// Language Search
+////////////////////////
+
+interface LangSuggestionData {
+    code: string;
+    id: number;
+    items: number;
+    name: string;
+    similarity: number;
+}
+
+class LangSuggestion implements Suggestion {
+    code: string;
+    id: number;
+    items: number;
+    name: string;
+    similarity: number;
+
+    constructor(data: LangSuggestionData) {
+        this.code = data.code;
+        this.id = data.id;
+        this.items = data.items;
+        this.name = data.name;
+        this.similarity = data.similarity;
+    }
+
+    getId(): number {
+        return this.id;
+    }
+
+    createListElement(): HTMLLIElement {
+        const el = document.createElement("li");
+        el.textContent = this.name;
+        return el;
+    }
+
+    inputValue(): string {
+        return this.name;
+    }
+}
+
+class LangSearchApiEndpoint implements ApiEndpoint {
+    timeout: number | undefined = undefined;
+    timeoutDuration = 500;
+    async fetch(query: string): Promise<LangSuggestion[]> {
+        const response = await fetch(`${API_BASE_URL}langs/${query}`);
+        const data = (await response.json()) as LangSuggestionData[];
+        return data.map((d) => new LangSuggestion(d));
+    }
+}
+
+class LangSearch extends Search {
+    lastLangName: string | null = null;
+    lastLangId: number | null = null;
+
+    constructor() {
+        const input = new Input("lang-search-input");
+        const suggestionsList = new SuggestionsList("lang-search-suggestions");
+        const apiEndpoint = new LangSearchApiEndpoint();
+        const nextFocus = document.getElementById("item-search-input");
+        const config = { input, suggestionsList, apiEndpoint, nextFocus };
+        super(config);
+        this.getStoredLastLang();
+    }
+
+    async getStoredLastLang() {
+        const lastLangName = window.localStorage.getItem("lastLangName");
+        const lastLangId = parseInt(
+            window.localStorage.getItem("lastLangId") || "",
+        );
+        if (lastLangName === null || isNaN(lastLangId)) {
+            this.input.element.focus();
+            return;
+        }
+
         try {
             console.log(
                 `Checking that stored last lang with name ${lastLangName} and id ${lastLangId} is still valid...`,
             );
-            const urlLangName = encodeURIComponent(lastLangName);
-            const response = await fetch(`${api}langs/${urlLangName}`);
-            const data = (await response.json()) as LangMatches;
+            const data = await this.apiEndpoint.fetch(lastLangName);
             console.log(data);
-            const langMatch = data.matches[0];
+            const lang = data[0];
             if (
-                langMatch.name === lastLangName &&
-                langMatch.id === lastLangId
+                lang.inputValue() === lastLangName &&
+                lang.getId() === lastLangId
             ) {
                 console.log("Check succeeded, using stored last lang.");
-                setSelectedLang(langMatch);
-                termSearchInput.focus();
+                this.setSelected(lang);
+                this.nextFocus?.focus();
                 return;
             }
             throw new Error("invalid stored last lang");
         } catch (error) {
-            langSearchInput.value = "";
-            langSearchInput.focus();
+            this.input.element.value = "";
+            this.input.element.focus();
             console.log(
                 "Check failed, clearing stored last lang. Probably the data was updated since your last visit.",
             );
-            lastLangName = null;
-            lastLangId = null;
-            this.localStorage.removeItem("lastLangName");
-            this.localStorage.removeItem("lastLangId");
+            this.lastLangName = null;
+            this.lastLangId = null;
+            window.localStorage.removeItem("lastLangName");
+            window.localStorage.removeItem("lastLangId");
             return;
         }
     }
-    langSearchInput.focus();
-});
 
-function displayLangSuggestions() {
-    langSuggestionsList.innerHTML = "";
-    langSelectedSuggestionIndex = -1;
-    if (langSuggestions.length === 0) {
-        langSuggestionsList.classList.add("hidden");
-        return;
-    }
-    for (let i = 0; i < langSuggestions.length; i++) {
-        const suggestion = langSuggestions[i];
-        const li = document.createElement("li");
-        li.classList.add("suggestion-item");
-        li.textContent = suggestion.name;
-        li.addEventListener("pointerup", () => {
-            langSearchInput.value = suggestion.name;
-            setSelectedLang(suggestion);
-            langSuggestionsList.classList.add("hidden");
-            termSearchInput.focus();
-        });
-        li.addEventListener("pointerover", function () {
-            updateSelectedLangSuggestion("hover", i);
-        });
-        langSuggestionsList.appendChild(li);
-    }
-    langSuggestionsList.classList.remove("hidden");
-}
-
-async function fetchLangSuggestions() {
-    const input = encodeURIComponent(
-        langSearchInput.value.trim().toLowerCase(),
-    );
-    if (!input) {
-        langSuggestionsList.innerHTML = "";
-        return;
-    }
-    try {
-        const response = await fetch(`${api}langs/${input}`);
-        const data = (await response.json()) as LangMatches;
-        console.log(data);
-        langSuggestions = data.matches;
-        displayLangSuggestions();
-    } catch (error) {
-        console.error(error);
+    setSelected(suggestion: Suggestion) {
+        window.localStorage.setItem("lastLangName", suggestion.inputValue());
+        window.localStorage.setItem(
+            "lastLangId",
+            suggestion.getId().toString(),
+        );
+        super.setSelected(suggestion);
     }
 }
 
-langSearchInput.addEventListener("input", () => {
-    langSelectedId = -1;
-    window.clearTimeout(langFetchTimeout);
-    langFetchTimeout = window.setTimeout(fetchLangSuggestions, 500);
-});
+export const LANG_SEARCH = new LangSearch();
 
-langSearchInput.addEventListener("keydown", (event) => {
-    if (langSuggestions.length === 0) return;
-    let newIndex = -1;
-    if (event.key === "ArrowDown") {
-        event.preventDefault();
-        if (langSelectedSuggestionIndex < langSuggestions.length - 1) {
-            newIndex = langSelectedSuggestionIndex + 1;
-        } else {
-            newIndex = 0;
-        }
-    } else if (event.key === "ArrowUp") {
-        event.preventDefault();
-        if (langSelectedSuggestionIndex > 0) {
-            newIndex = langSelectedSuggestionIndex - 1;
-        } else {
-            newIndex = langSuggestions.length - 1;
-        }
-    } else if (event.key === "Enter") {
-        if (langSelectedSuggestionIndex > -1) {
-            event.preventDefault();
-            const suggestion = langSuggestions[langSelectedSuggestionIndex];
-            langSearchInput.value = suggestion.name;
-            setSelectedLang(suggestion);
-            langSuggestionsList.classList.add("hidden");
-            termSearchInput.focus();
-        }
+////////////////////////
+// Item Search
+////////////////////////
+
+interface ItemSuggestionData {
+    distance: number;
+    item: Item;
+}
+
+class ItemSuggestion implements Suggestion {
+    distance: number;
+    item: Item;
+
+    constructor(data: ItemSuggestionData) {
+        this.distance = data.distance;
+        this.item = data.item;
     }
-    updateSelectedLangSuggestion("key", newIndex);
-});
 
-langSearchInput.addEventListener("blur", () => {
-    // Prevent the suggestions list from being hidden when user presses "Done"
-    // on virtual keyboard, thereby unfocusing the input element.
-    if ((hasTouchOnly || langSuggestionsListHovered) && langSelectedId === -1)
-        return;
-    langSuggestionsList.classList.add("hidden");
-});
+    getId(): number {
+        return this.item.id;
+    }
 
-langSuggestionsList.addEventListener("mouseover", () => {
-    langSuggestionsListHovered = true;
-});
+    createListElement(): HTMLLIElement {
+        const el = document.createElement("li");
+        const termLine = document.createElement("div");
+        termLine.classList.add("term-line");
+        termLine.innerHTML = this.item.term;
+        el.appendChild(termLine);
+        const posList = this.item.pos ?? [];
+        const glossList = this.item.gloss ?? [];
+        for (let i = 0; i < posList.length; i++) {
+            const pos = posList[i];
+            const gloss = glossList[i];
+            const posLine = document.createElement("div");
+            posLine.classList.add("pos-line");
+            posLine.innerHTML = `<span class="pos">${pos}</span>: <span class="gloss">${gloss}</span>`;
+            el.appendChild(posLine);
+        }
+        return el;
+    }
 
-langSuggestionsList.addEventListener("mouseout", () => {
-    langSuggestionsListHovered = false;
-});
-
-function updateSelectedLangSuggestion(inputType: string, newIndex = -1) {
-    const suggestionElements = langSuggestionsList.getElementsByTagName("li");
-    const oldSuggestion = suggestionElements[langSelectedSuggestionIndex];
-    oldSuggestion?.classList.remove("highlighted");
-    langSelectedSuggestionIndex = newIndex;
-    const newSuggestion = suggestionElements[langSelectedSuggestionIndex];
-    newSuggestion?.classList.add("highlighted");
-
-    if (inputType === "hover" || langSelectedSuggestionIndex === -1) return;
-
-    const elementRect = newSuggestion.getBoundingClientRect();
-    const containerRect = langSuggestionsList.getBoundingClientRect();
-    if (elementRect.bottom > containerRect.bottom) {
-        langSuggestionsList.scrollTop +=
-            elementRect.bottom - containerRect.bottom;
-    } else if (elementRect.top < containerRect.top) {
-        langSuggestionsList.scrollTop -= containerRect.top - elementRect.top;
+    inputValue(): string {
+        return this.item.term;
     }
 }
 
-///////////////////////////
-// Term stuff
-///////////////////////////
-
-const termSearchInput = document.getElementById(
-    "term-input",
-) as HTMLInputElement;
-const termSuggestionsList = document.getElementById(
-    "term-suggestions",
-) as HTMLUListElement;
-let termSuggestions: ItemMatch[] = [];
-let termSelectedSuggestionIndex = -1;
-let termSuggestionsListHovered = false;
-export let termSelectedId = -1;
-let termFetchTimeout: number;
-let treeFetchTimeout: number;
-
-function createTermSuggestionListItem(termSuggestion: Item, index: number) {
-    const listItem = document.createElement("li");
-    listItem.classList.add("suggestion-item");
-    listItem.addEventListener("pointerup", () => {
-        termSearchInput.value = termSuggestion.term;
-        termSelectedId = termSuggestion.id;
-        termSuggestionsList.classList.add("hidden");
-        if (langSelectedId !== -1) {
-            window.clearTimeout(treeFetchTimeout);
-            treeFetchTimeout = window.setTimeout(getHeadProgenitorTree, 0);
-        }
-    });
-    listItem.addEventListener("pointerover", function () {
-        updateSelectedTermSuggestion("hover", index);
-    });
-    const termLine = document.createElement("div");
-    termLine.classList.add("term-line");
-    termLine.innerHTML = termSuggestion.term;
-    listItem.appendChild(termLine);
-    const posList = termSuggestion.pos ?? [];
-    const glossList = termSuggestion.gloss ?? [];
-    for (let i = 0; i < posList.length; i++) {
-        const pos = posList[i];
-        const gloss = glossList[i];
-        const posLine = document.createElement("div");
-        posLine.classList.add("pos-line");
-        posLine.innerHTML = `<span class="pos">${pos}</span>: <span class="gloss">${gloss}</span>`;
-        listItem.appendChild(posLine);
-    }
-    return listItem;
-}
-
-function displayTermSuggestions() {
-    termSuggestionsList.innerHTML = "";
-    termSelectedSuggestionIndex = -1;
-    if (termSuggestions.length === 0) {
-        termSuggestionsList.classList.add("hidden");
-        return;
-    }
-    for (let i = 0; i < termSuggestions.length; i++) {
-        const suggestion = termSuggestions[i];
-        const li = createTermSuggestionListItem(suggestion.item, i);
-        termSuggestionsList.appendChild(li);
-    }
-    termSuggestionsList.classList.remove("hidden");
-}
-
-async function fetchTermSuggestions() {
-    if (langSelectedId === -1) {
-        termSuggestionsList.innerHTML = "";
-        return;
-    }
-    const input = encodeURIComponent(
-        termSearchInput.value.trim().toLowerCase(),
-    );
-    if (!input) {
-        termSuggestionsList.innerHTML = "";
-        return;
-    }
-    try {
-        const response = await fetch(`${api}items/${langSelectedId}/${input}`);
-        const data = (await response.json()) as ItemMatches;
-        console.log(data);
-        termSuggestions = data.matches;
-        displayTermSuggestions();
-    } catch (error) {
-        console.error(error);
+class ItemSearchApiEndpoint implements ApiEndpoint {
+    timeout: number | undefined = undefined;
+    timeoutDuration = 500;
+    async fetch(query: string): Promise<ItemSuggestion[]> {
+        const lang = LANG_SEARCH.selectedId;
+        const response = await fetch(`${API_BASE_URL}items/${lang}/${query}`);
+        const data = (await response.json()) as ItemSuggestionData[];
+        return data.map((d) => new ItemSuggestion(d));
     }
 }
 
-termSearchInput.addEventListener("input", () => {
-    termSelectedId = -1;
-    window.clearTimeout(termFetchTimeout);
-    termFetchTimeout = window.setTimeout(fetchTermSuggestions, 500);
-});
+class ItemSearch extends Search {
+    treeFetchTimeout: number | undefined = undefined;
+    treeFetchTimeoutDuration = 0;
 
-termSearchInput.addEventListener("keydown", (event) => {
-    if (termSuggestions.length === 0) return;
-    let newIndex = -1;
-    if (event.key === "ArrowDown") {
-        event.preventDefault();
-        if (termSelectedSuggestionIndex < termSuggestions.length - 1) {
-            newIndex = termSelectedSuggestionIndex + 1;
-        } else {
-            newIndex = 0;
-        }
-    } else if (event.key === "ArrowUp") {
-        event.preventDefault();
-        if (termSelectedSuggestionIndex > 0) {
-            newIndex = termSelectedSuggestionIndex - 1;
-        } else {
-            newIndex = termSuggestions.length - 1;
-        }
-    } else if (event.key === "Enter") {
-        if (termSelectedSuggestionIndex > -1) {
-            event.preventDefault();
-            const suggestion = termSuggestions[termSelectedSuggestionIndex];
-            termSearchInput.value = suggestion.item.term;
-            termSelectedId = suggestion.item.id;
-            termSuggestionsList.classList.add("hidden");
-            if (langSelectedId !== -1) {
-                window.clearTimeout(treeFetchTimeout);
-                treeFetchTimeout = window.setTimeout(getHeadProgenitorTree, 0);
-            }
-        }
+    constructor() {
+        const input = new Input("item-search-input");
+        const suggestionsList = new SuggestionsList("item-search-suggestions");
+        const apiEndpoint = new ItemSearchApiEndpoint();
+        const nextFocus = null;
+        const config = { input, suggestionsList, apiEndpoint, nextFocus };
+        super(config);
     }
-    updateSelectedTermSuggestion("key", newIndex);
-});
 
-termSearchInput.addEventListener("blur", () => {
-    // Prevent the suggestions list from being hidden when user presses "Done"
-    // on virtual keyboard, thereby unfocusing the input element.
-    if ((hasTouchOnly || termSuggestionsListHovered) && termSelectedId === -1)
-        return;
-    termSuggestionsList.classList.add("hidden");
-});
-
-termSuggestionsList.addEventListener("mouseover", () => {
-    termSuggestionsListHovered = true;
-});
-
-termSuggestionsList.addEventListener("mouseout", () => {
-    termSuggestionsListHovered = false;
-});
-
-function updateSelectedTermSuggestion(inputType: string, newIndex = -1) {
-    const suggestionElements = termSuggestionsList.getElementsByTagName("li");
-    const oldSuggestion = suggestionElements[termSelectedSuggestionIndex];
-    oldSuggestion?.classList.remove("highlighted");
-    termSelectedSuggestionIndex = newIndex;
-    const newSuggestion = suggestionElements[termSelectedSuggestionIndex];
-    newSuggestion?.classList.add("highlighted");
-    if (inputType === "hover" || termSelectedSuggestionIndex === -1) return;
-    const elementRect = newSuggestion.getBoundingClientRect();
-    const containerRect = termSuggestionsList.getBoundingClientRect();
-    if (elementRect.bottom > containerRect.bottom) {
-        termSuggestionsList.scrollTop +=
-            elementRect.bottom - containerRect.bottom;
-    } else if (elementRect.top < containerRect.top) {
-        termSuggestionsList.scrollTop -= containerRect.top - elementRect.top;
+    setSelected(suggestion: Suggestion) {
+        super.setSelected(suggestion);
+        const lang = LANG_SEARCH.selectedId;
+        if (lang === null) return;
+        window.clearTimeout(this.treeFetchTimeout);
+        this.treeFetchTimeout = window.setTimeout(
+            getHeadProgenitorTree,
+            this.treeFetchTimeoutDuration,
+        );
     }
 }
+
+export const ITEM_SEARCH = new ItemSearch();
