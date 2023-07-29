@@ -1,6 +1,5 @@
 import { ExpandedItem } from "./item";
-import { ExpandedItemNode } from "./tree";
-import { langColor } from "./tree";
+import { ExpandedItemNode, langColor } from "./tree";
 
 import { Selection, HierarchyPointNode } from "d3";
 
