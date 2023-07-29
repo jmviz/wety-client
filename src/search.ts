@@ -216,7 +216,7 @@ class Search {
         for (let i = 0; i < this.suggestionsList.data.length; i++) {
             const suggestion = this.suggestionsList.data[i];
             const li = suggestion.createListElement();
-            li.classList.add("suggestion-item");
+            li.classList.add("search-suggestion-item");
             li.addEventListener("pointerup", () => {
                 this.setSelected(suggestion);
             });

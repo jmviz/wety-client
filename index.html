@@ -14,23 +14,31 @@
 
     <body>
         <header>
-            <div id="search">
-                <div id="lang-search">
+            <div id="search-pane">
+                <div id="lang-search-container" class="search-container">
                     <input
                         id="lang-search-input"
+                        class="search-input"
                         type="text"
                         placeholder="Language..."
                     />
-                    <ul id="lang-search-suggestions" class="suggestions"></ul>
+                    <ul
+                        id="lang-search-suggestions"
+                        class="search-suggestions"
+                    ></ul>
                 </div>
-                <div id="item-search">
+                <div id="item-search-container" class="search-container">
                     <input
                         id="item-search-input"
+                        class="search-input"
                         type="text"
                         placeholder="Term..."
                         dir="auto"
                     />
-                    <ul id="item-search-suggestions" class="suggestions"></ul>
+                    <ul
+                        id="item-search-suggestions"
+                        class="search-suggestions"
+                    ></ul>
                 </div>
                 <!-- <button id="submit-button">
                     <svg
