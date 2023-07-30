@@ -202,6 +202,7 @@ class Search {
         }
         try {
             const data = await this.apiEndpoint.fetch(query);
+            console.log(data);
             this.suggestionsList.data = data;
             this.displaySuggestions();
         } catch (error) {
@@ -282,9 +283,7 @@ class LangSearchApiEndpoint implements ApiEndpoint {
     timeoutDuration = 500;
     async fetch(query: string): Promise<LangSuggestion[]> {
         const response = await fetch(`${API_BASE_URL}langs/${query}`);
-        console.log(response);
         const data = (await response.json()) as LangSuggestionData[];
-        console.log(data);
         return data.map((d) => new LangSuggestion(d));
     }
 }
@@ -412,9 +411,7 @@ class ItemSearchApiEndpoint implements ApiEndpoint {
             return [];
         }
         const response = await fetch(`${API_BASE_URL}items/${lang}/${query}`);
-        console.log(response);
         const data = (await response.json()) as ItemSuggestionData[];
-        console.log(data);
         return data.map((d) => new ItemSuggestion(d));
     }
 }
