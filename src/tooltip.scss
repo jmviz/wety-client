@@ -1,0 +1,73 @@
+#tooltip {
+    opacity: 0;
+    z-index: -9000;
+    width: max-content;
+    max-width: 500px;
+    text-align: left;
+    padding: 0rem 0.5rem;
+    background: #ffffff;
+    color: #313639;
+    border: 1px solid #313639;
+    border-radius: 5px;
+
+    .close-button {
+        width: 1rem;
+        height: 1rem;
+        position: absolute;
+        background-color: transparent;
+        top: 2px;
+        right: 2px;
+        font-weight: bold;
+        font-size: larger;
+        color: #313639;
+        opacity: 50%;
+        border: none;
+        cursor: pointer;
+        text-align: right;
+    }
+
+    p,
+    div {
+        margin-top: 0.5rem;
+        margin-bottom: 0.5rem;
+    }
+
+    .lang {
+        font-size: larger;
+    }
+
+    .term {
+        font-weight: bold;
+    }
+
+    .imputed {
+        font-style: italic;
+        color: dimgray;
+    }
+
+    .pos-line {
+        white-space: normal;
+    }
+
+    .ety-mode {
+        font-style: italic;
+    }
+
+    .ety-prep {
+        font-size: smaller;
+    }
+
+    .parent-term {
+        font-weight: bold;
+    }
+
+    .wiktionary-link-container {
+        text-align: right;
+        font-size: smaller;
+
+        .wiktionary-link {
+            color: #313639;
+            text-decoration: underline;
+        }
+    }
+}

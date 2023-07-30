@@ -1,0 +1,17 @@
+#ety {
+    display: flex;
+    flex-direction: column;
+    font-size: small;
+
+    #tree {
+        margin: auto;
+
+        .lang {
+            font-size: smaller;
+        }
+
+        .romanization {
+            font-size: smaller;
+        }
+    }
+}

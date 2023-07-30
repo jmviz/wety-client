@@ -27,6 +27,7 @@ export async function getHeadProgenitorTree() {
         const response = await fetch(
             `${API_BASE_URL}headProgenitorTree/${item}?lang=${lang}`,
         );
+        console.log(response);
         treeData = await response.json();
         console.log(treeData);
         displayHeadProgenitorTree();
