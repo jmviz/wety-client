@@ -1,3 +1,5 @@
+**2023-09-19: This repository was the first incarnation of the frontend for [`wety.org`](https://www.wety.org/). Development has moved to the `client` subdirectory of the [`wety`](https://github.com/jmviz/wety) repository. The original README follows:**
+
 # wety-client
 
 This is the frontend for [`wety.org`](https://www.wety.org/). See the [`wety`](https://github.com/jmviz/wety) repository for the data processing and server code.
